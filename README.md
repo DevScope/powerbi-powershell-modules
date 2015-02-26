@@ -16,7 +16,7 @@ Cmdlets present in the module:
 | [Add-PBITableRows](#AddPBITableRows) | Add's a collection of rows into a powerbi dataset table in batches |
 | [Get-PBIDataSets](#GetPBIDataSets) |  Gets all the PowerBI existing datasets and returns them as an array of custom objects |
 | [Get-PBIDataSet](#GetPBIDataSet) | Gets a DataSet by name |
-| [Test-PBIDataSet](#TestPBIDataSet) |  Check if a dataset exists by name |
+| [Test-PBIDataSet](#TestPBIDataSet) |  Test the existence of a DataSet by name |
 | [Clear-PBITableRows](#ClearPBITableRows) |  Delete all the rows of a PowerBI dataset table |
 
 The samples below assume that the module is installed in the user modules directory:
