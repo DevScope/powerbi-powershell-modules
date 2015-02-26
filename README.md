@@ -104,7 +104,6 @@ $authToken = Get-PBIAuthToken -clientId "4c3c58d6-8c83-48c2-a604-67c1b740d167"
 if (-not (Test-PBIDataSet -authToken $authToken -dataSetName "TestDataSet"))
 {
 	# If cannot find the DataSet create a new one with this schema
-	
 	$dataSetSchema = @{
 		name = "TestDataSet"	
 	    ; tables = @(
