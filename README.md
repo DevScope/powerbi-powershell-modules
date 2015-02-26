@@ -11,7 +11,7 @@ Cmdlets present in the module:
 
 | Cmdlet   |      Description      |
 |----------|:--------------|
-| Get-PBIAuthToken |  Gets the authentication token required to comunicate with the PowerBI API's |
+| [Get-PBIAuthToken](#PBIAuthToken) |  Gets the authentication token required to comunicate with the PowerBI API's |
 | New-PBIDataSet |    Create a new DataSet   |
 | Add-PBITableRows | Add's a collection of rows into a powerbi dataset table in batches |
 | Get-PBIDataSets |  Gets all the PowerBI existing datasets and returns them as an array of custom objects |
@@ -24,7 +24,7 @@ The samples below assume that the module is installed in the user modules direct
 
 ![](https://github.com/DevScope/powerbi-powershell-modules/blob/master/Images/PowerBIPS.PNG)
 
-## Get PowerBI Authentication Token
+## <a name="PBIAuthToken"></a>Get PowerBI Authentication Token
 
 ```powershell
 
