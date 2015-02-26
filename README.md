@@ -7,6 +7,18 @@ Stay tuned for more samples of usage at:
 * https://ruiromanoblog.wordpress.com/
 * https://rquintino.wordpress.com/
 
+Cmdlets present in the module:
+
+| Cmdlet   |      Description      |
+|----------|:--------------|
+| Get-PBIAuthToken |  Gets the authentication token required to comunicate with the PowerBI API's |
+| New-PBIDataSet |    Create a new DataSet   |
+| Add-PBITableRows | Add's a collection of rows into a powerbi dataset table in batches |
+| Get-PBIDataSets |  Gets all the PowerBI existing datasets and returns them as an array of custom objects |
+| Get-PBIDataSet | Gets a DataSet by name |
+| Test-PBIDataSet |  Check if a dataset exists by name |
+| Clear-PBITableRows |  Delete all the rows of a PowerBI dataset table |
+
 The samples below assume that the module is installed in the user modules directory:
 * %USERPROFILE%\Documents\WindowsPowershell\Modules\PowerBIPS
 
