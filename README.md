@@ -10,6 +10,8 @@ Stay tuned for more samples of usage at:
 The samples below assume that the module is installed in the user modules directory:
 * %USERPROFILE%\Documents\WindowsPowershell\Modules\PowerBIPS
 
+![](https://github.com/DevScope/powerbi-powershell-modules/blob/master/Images/PowerBIPS.PNG)
+
 ## Get PowerBI Authentication Token
 
 ```powershell
