@@ -2,6 +2,11 @@
 
 A powershell module with cmdlets to interact with the PowerBI developer APIs.
 
+Stay tuned for more samples of usage at: 
+
+* https://ruiromanoblog.wordpress.com/
+* https://rquintino.wordpress.com/
+
 ## Get PowerBI Authentication Token
 
 ```powershell
