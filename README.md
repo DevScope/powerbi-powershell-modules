@@ -105,7 +105,7 @@ $sampleRows | Add-PBITableRows -authToken $authToken -dataSetName "TestDataSet" 
 
 ```
 
-## <a name="ClearPBITableRows "></a>Delete Rows of a table
+## <a name="ClearPBITableRows"></a>Delete Rows of a table
 
 ```powershell
 
