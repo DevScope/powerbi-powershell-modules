@@ -2,13 +2,11 @@
 
 A powershell module with cmdlets to interact with the PowerBI developer APIs.
 
-PowerBI developer API documentation: https://msdn.microsoft.com/library/dn877544
-
 ## Get PowerBI Authentication Token
 
 ```powershell
 
-$authToken = Get-PBIAuthToken -clientId "4c3c58d6-8c83-48c2-a604-67c1b740d167"
+$authToken = Get-PBIAuthToken -clientId "<your clientId>"
 
 $authTokenWithUsername = Get-PBIAuthToken -clientId "4c3c58d6-8c83-48c2-a604-67c1b740d167" -userName "<username>" -password "<password>"
 
@@ -85,7 +83,7 @@ Clear-PBITableRows -authToken $authToken -dataSetName "TestDataSet" -tableName "
 
 ```
 
-## Full Script Sample
+## Script Sample
 
 ```powershell
 
@@ -93,7 +91,7 @@ cls
 
 Import-Module PowerBIPS -Force
 
-$authToken = Get-PBIAuthToken -clientId "4c3c58d6-8c83-48c2-a604-67c1b740d167"
+$authToken = Get-PBIAuthToken -clientId "<your clientId>"
 
 if (-not (Test-PBIDataSet -authToken $authToken -dataSetName "TestDataSet"))
 {
