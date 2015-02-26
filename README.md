@@ -75,7 +75,7 @@ $sampleRows | Add-PBITableRows -authToken $authToken -dataSetName "TestDataSet" 
 
 ```
 
-## Delete rows of a table
+## Delete Rows of a table
 
 ```powershell
 
