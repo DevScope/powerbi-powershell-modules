@@ -94,6 +94,8 @@ Clear-PBITableRows -authToken $authToken -dataSetName "TestDataSet" -tableName "
 
 cls
 
+$ErrorActionPreference = "Stop"
+
 Import-Module PowerBIPS -Force
 
 $authToken = Get-PBIAuthToken -clientId "<your clientId>"
