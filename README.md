@@ -38,7 +38,7 @@ $authTokenWithUsername = Get-PBIAuthToken -clientId "4c3c58d6-8c83-48c2-a604-67c
 
 ```powershell
 
-$dataSets = Get-PBIDataSets -authToken $authToken -Verbose
+Get-PBIDataSets -authToken $authToken -Verbose | Out-GridView
 
 ```
 
