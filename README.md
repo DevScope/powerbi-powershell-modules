@@ -7,7 +7,7 @@ Stay tuned for more samples of usage at:
 * https://ruiromanoblog.wordpress.com/
 * https://rquintino.wordpress.com/
 
-*The samples below assume that the module is installed in the user modules directory: * 
+*The samples below assume that the module is installed in the user modules directory:* 
 * %USERPROFILE%\Documents\WindowsPowershell\Modules\PowerBIPS
 
 ## Get PowerBI Authentication Token
