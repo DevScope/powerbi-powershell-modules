@@ -11,20 +11,20 @@ Cmdlets present in the module:
 
 | Cmdlet   |      Description      |
 |----------|:--------------|
-| [Get-PBIAuthToken](#PBIAuthToken) |  Gets the authentication token required to comunicate with the PowerBI API's |
-| New-PBIDataSet |    Create a new DataSet   |
-| Add-PBITableRows | Add's a collection of rows into a powerbi dataset table in batches |
-| Get-PBIDataSets |  Gets all the PowerBI existing datasets and returns them as an array of custom objects |
-| Get-PBIDataSet | Gets a DataSet by name |
-| Test-PBIDataSet |  Check if a dataset exists by name |
-| Clear-PBITableRows |  Delete all the rows of a PowerBI dataset table |
+| [Get-PBIAuthToken](#GetPBIAuthToken) |  Gets the authentication token required to comunicate with the PowerBI API's |
+| [New-PBIDataSet](#NewPBIDataSet) |    Create a new DataSet   |
+| [Add-PBITableRows](#AddPBITableRows) | Add's a collection of rows into a powerbi dataset table in batches |
+| [Get-PBIDataSets](#GetPBIDataSets) |  Gets all the PowerBI existing datasets and returns them as an array of custom objects |
+| [Get-PBIDataSet](#GetPBIDataSet) | Gets a DataSet by name |
+| [Test-PBIDataSet](#TestPBIDataSet) |  Check if a dataset exists by name |
+| [Clear-PBITableRows](#ClearPBITableRows) |  Delete all the rows of a PowerBI dataset table |
 
 The samples below assume that the module is installed in the user modules directory:
 * %USERPROFILE%\Documents\WindowsPowershell\Modules\PowerBIPS
 
 ![](https://github.com/DevScope/powerbi-powershell-modules/blob/master/Images/PowerBIPS.PNG)
 
-## <a name="PBIAuthToken"></a>Get PowerBI Authentication Token
+## <a name="GetPBIAuthToken"></a>Get PowerBI Authentication Token
 
 ```powershell
 
@@ -34,7 +34,7 @@ $authTokenWithUsername = Get-PBIAuthToken -clientId "4c3c58d6-8c83-48c2-a604-67c
 
 ```
 
-## List DataSets
+## <a name="GetPBIDataSets"></a>List DataSets
 
 ```powershell
 
@@ -42,7 +42,15 @@ $dataSets = Get-PBIDataSets -authToken $authToken -Verbose
 
 ```
 
-## Test the existence of a DataSet
+## <a name="GetPBIDataSet"></a>Get a DataSet
+
+```powershell
+
+$dataSets = Get-PBIDataSet -authToken $authToken -dataSetName "TestDataSet"
+
+```
+
+## <a name="TestPBIDataSet"></a>Test the existence of a DataSet
 
 ```powershell
 
@@ -57,7 +65,7 @@ else
 
 ```
 
-## Create a DataSet
+## <a name="NewPBIDataSet"></a>Create a DataSet
 
 ```powershell
 
@@ -78,7 +86,7 @@ $createdDataSet = New-PBIDataSet -authToken $authToken -dataSet $dataSetSchema -
 
 ```
 
-## Add Rows to a table
+## <a name="AddPBITableRows"></a>Add Rows to a table
 
 ```powershell
 
@@ -97,7 +105,7 @@ $sampleRows | Add-PBITableRows -authToken $authToken -dataSetName "TestDataSet" 
 
 ```
 
-## Delete Rows of a table
+## <a name="ClearPBITableRows "></a>Delete Rows of a table
 
 ```powershell
 
