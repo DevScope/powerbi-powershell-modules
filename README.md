@@ -112,7 +112,7 @@ Clear-PBITableRows -authToken $authToken -dataSetName "TestDataSet" -tableName "
 
 ```
 
-## Script Sample
+## Sample Script
 
 ```powershell
 
