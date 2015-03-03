@@ -2,10 +2,9 @@
 
 A powershell module with cmdlets to interact with the PowerBI developer APIs.
 
-Stay tuned for more samples of usage at: 
+Samples of usage at: 
 
-* https://ruiromanoblog.wordpress.com/
-* https://rquintino.wordpress.com/
+* https://ruiromanoblog.wordpress.com/2015/03/03/create-a-real-time-it-dashboard-with-powerbips/
 
 Cmdlets present in the module:
 
