@@ -1,6 +1,6 @@
 # PowerBIPS.psm1
 
-A powershell module with cmdlets to interact with the PowerBI developer APIs.
+A powershell module for the new PowerBI developer REST API’s.
 
 Samples of usage at: 
 
