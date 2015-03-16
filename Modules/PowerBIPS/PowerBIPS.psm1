@@ -1,4 +1,4 @@
-﻿<# 
+<# 
 
 Checkout more products and samples at:
 	- http://devscope.net/
