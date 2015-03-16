@@ -1,6 +1,6 @@
 # PowerBIPS.psm1
 
-A powershell module for the new PowerBI developer REST API’s.
+A PowerShell module for the new PowerBI developer REST APIs.
 
 Samples of usage at: 
 
@@ -10,7 +10,7 @@ Cmdlets present in the module:
 
 | Cmdlet   |      Description      |
 |----------|:--------------|
-| [Get-PBIAuthToken](#GetPBIAuthToken) |  Gets the authentication token required to comunicate with the PowerBI API's |
+| [Get-PBIAuthToken](#GetPBIAuthToken) |  Gets the authentication token required to communicate with the PowerBI APIs |
 | [New-PBIDataSet](#NewPBIDataSet) |    Create a new DataSet   |
 | [Add-PBITableRows](#AddPBITableRows) | Add's a collection of rows into a powerbi dataset table in batches |
 | [Get-PBIDataSets](#GetPBIDataSets) |  Gets all the PowerBI existing datasets and returns them as an array of custom objects |
