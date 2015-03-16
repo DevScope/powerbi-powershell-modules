@@ -2,7 +2,7 @@ cls
 
 $ErrorActionPreference = "Stop"
 
-$currentPath = (Split-Path $MyInvocation.MyCommand.Definition –Parent)
+$currentPath = (Split-Path $MyInvocation.MyCommand.Definition -Parent)
 
 Import-Module "$currentPath\..\PowerBIPS.psm1" -Force
 
