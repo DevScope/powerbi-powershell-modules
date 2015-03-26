@@ -1,5 +1,4 @@
-cls
-
+﻿cls
 
 $ErrorActionPreference = "Stop"
 
