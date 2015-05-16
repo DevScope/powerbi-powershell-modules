@@ -61,11 +61,9 @@ while($true)
 ```powershell
 
 cls
-$ErrorActionPreference = "Stop"
-
-Import-Module PowerBIPS -Force
 
 # Get the authentication token using ADAL library (OAuth)
+
 $authToken = Get-PBIAuthToken
 
 # Test the existence of the dataset
