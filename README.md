@@ -5,6 +5,7 @@ A PowerShell module for the new PowerBI developer REST APIs.
 Samples of usage at: 
 
 * https://ruiromanoblog.wordpress.com/2015/03/03/create-a-real-time-it-dashboard-with-powerbips/
+* https://github.com/DevScope/powerbi-powershell-modules/blob/master/Modules/PowerBIPS/Samples
 
 Cmdlets present in the module:
 
@@ -24,7 +25,6 @@ For a better experience please install this module on your UserProfile directory
 * %USERPROFILE%\Documents\WindowsPowershell\Modules\PowerBIPS
 
 ![](https://github.com/DevScope/powerbi-powershell-modules/blob/master/Images/PowerBIPS.PNG)
-![](https://github.com/DevScope/powerbi-powershell-modules/blob/master/Modules/PowerBIPS/Samples)
 
 ## Sample Script 1 (Send CSV Data To PowerBI)
 
