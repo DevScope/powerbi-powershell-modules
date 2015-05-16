@@ -21,8 +21,12 @@ Cmdlets present in the module:
 | [Update-PBITableSchema](#UpdatePBITableSchema) |  Updates a table schema |
 
 
-For a better experience please install this module on your UserProfile directory:
+For a better experience please copy this module on your UserProfile directory:
 * %USERPROFILE%\Documents\WindowsPowershell\Modules\PowerBIPS
+
+Or just import it to your PowerShell session by typing:
+
+* Import-Module ".\Modules\PowerBIPS" -Force
 
 ![](https://github.com/DevScope/powerbi-powershell-modules/blob/master/Images/PowerBIPS.PNG)
 
