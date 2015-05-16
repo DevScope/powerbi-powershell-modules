@@ -24,6 +24,7 @@ For a better experience please install this module on your UserProfile directory
 * %USERPROFILE%\Documents\WindowsPowershell\Modules\PowerBIPS
 
 ![](https://github.com/DevScope/powerbi-powershell-modules/blob/master/Images/PowerBIPS.PNG)
+![](https://github.com/DevScope/powerbi-powershell-modules/blob/master/Modules/PowerBIPS/Samples)
 
 ## Sample Script 1 (Send CSV Data To PowerBI)
 
