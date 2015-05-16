@@ -10,41 +10,54 @@ Cmdlets present in the module:
 
 | Cmdlet   |      Description      |
 |----------|:--------------|
+| [Out-PowerBI](#OutPowerBI) |  The most easy way for you to send data into PowerBI |
 | [Get-PBIAuthToken](#GetPBIAuthToken) |  Gets the authentication token required to communicate with the PowerBI APIs |
 | [New-PBIDataSet](#NewPBIDataSet) |    Create a new DataSet   |
 | [Add-PBITableRows](#AddPBITableRows) | Add's a collection of rows into a powerbi dataset table in batches |
-| [Get-PBIDataSets](#GetPBIDataSets) |  Gets all the PowerBI existing datasets and returns them as an array of custom objects |
-| [Get-PBIDataSet](#GetPBIDataSet) | Gets a DataSet by name |
+| [Get-PBIDataSet](#GetPBIDataSet) | Gets a DataSet(s) collection |
 | [Test-PBIDataSet](#TestPBIDataSet) |  Test the existence of a DataSet by name |
 | [Clear-PBITableRows](#ClearPBITableRows) |  Delete all the rows of a PowerBI dataset table |
+| [Update-PBITableSchema](#UpdatePBITableSchema) |  Updates a table schema |
 
-The samples below assume that the module is installed in the user modules directory:
+
+For a better experience please install this module on your UserProfile directory:
 * %USERPROFILE%\Documents\WindowsPowershell\Modules\PowerBIPS
 
 ![](https://github.com/DevScope/powerbi-powershell-modules/blob/master/Images/PowerBIPS.PNG)
+
+## <a name="OutPowerBI"></a>Simply sends data to PowerBI
+
+```powershell
+
+# Upload local computer windows process data to PowerBI
+
+Get-Process | Out-PowerBI -verbose
+
+# Upload CSV data to PowerBI dataset named "CSVSales" and with the types specified
+
+Import-Csv "c:\csvData.csv" | Out-PowerBI -dataSetName "CSVSales" -tableName "Sales" -types @{"Sales.OrderDate"="datetime"; "Sales.SalesAmount"="double"; "Sales.Freight"="double"} -batchSize 300 -verbose	
+	
+```
 
 ## <a name="GetPBIAuthToken"></a>Get PowerBI Authentication Token
 
 ```powershell
 
-$authToken = Get-PBIAuthToken -clientId "<your clientId>"
+$authToken = Get-PBIAuthToken
 
+# To use username+password authentication you need to create an Azure AD Application and get it's id
 $authTokenWithUsername = Get-PBIAuthToken -clientId "4c3c58d6-8c83-48c2-a604-67c1b740d167" -userName "<username>" -password "<password>"
 
 ```
 
-## <a name="GetPBIDataSets"></a>List DataSets
+## <a name="GetPBIDataSet"></a>Get a DataSet or a List of DataSets
 
 ```powershell
 
-Get-PBIDataSets -authToken $authToken -Verbose | Out-GridView
+# All DataSets
+$dataSets = Get-PBIDataSet -authToken $authToken
 
-```
-
-## <a name="GetPBIDataSet"></a>Get a DataSet
-
-```powershell
-
+# By Name
 $dataSets = Get-PBIDataSet -authToken $authToken -dataSetName "TestDataSet"
 
 ```
@@ -112,7 +125,53 @@ Clear-PBITableRows -authToken $authToken -dataSetName "TestDataSet" -tableName "
 
 ```
 
-## Sample Script
+## <a name="UpdatePBITableSchema"></a>Update a Table Schema
+
+```powershell
+
+$tableSchema =  @{ 
+	name = "Sales"
+	; columns = @( 
+		@{ name = "Col1"; dataType = "Int64"  }
+		, @{ name = "Col2"; dataType = "string"  }
+		, @{ name = "NewColumn"; dataType = "string"  }
+		) 
+}
+
+Update-PBITableSchema -authToken $authToken -dataSetId "<dataSetId>" -table $tableSchema -verbose
+
+```
+## Sample Script 1 (Send CSV Data To PowerBI)
+
+```powershell
+
+while($true)
+{
+	# Iterate each CSV file and add to a hashtable with a key for each table that will later be sent to PowerBI
+	
+	Get-ChildItem "$currentPath\CSVData" -Filter "*.csv" |% {
+		
+		$tableName = $_.BaseName.Split('.')[0]
+
+		$data = Import-Csv $_.FullName					
+		
+		# Send data to PowerBI
+		
+		$data | Out-PowerBI -dataSetName "CSVSales" -tableName "Sales" -types @{"Sales.OrderDate"="datetime"; "Sales.SalesAmount"="double"; "Sales.Freight"="double"} -batchSize 300 -verbose	
+		
+		# Archive the file
+		
+		Move-Item $_.FullName "$currentPath\CSVData\Archive" -Force
+	}
+	
+	Write-Output "Sleeping..."
+	
+	Sleep -Seconds 5
+}
+
+```
+
+## Sample Script 2 (Manual DataSet creation)
 
 ```powershell
 
@@ -122,7 +181,7 @@ $ErrorActionPreference = "Stop"
 Import-Module PowerBIPS -Force
 
 # Get the authentication token using ADAL library (OAuth)
-$authToken = Get-PBIAuthToken -clientId "4c3c58d6-8c83-48c2-a604-67c1b740d167"
+$authToken = Get-PBIAuthToken
 
 # Test the existence of the dataset
 if (-not (Test-PBIDataSet -authToken $authToken -dataSetName "TestDataSet"))
