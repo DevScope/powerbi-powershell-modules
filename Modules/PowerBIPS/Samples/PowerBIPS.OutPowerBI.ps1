@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 
 $currentPath = (Split-Path $MyInvocation.MyCommand.Definition -Parent)
 
-Import-Module "$currentPath\..\PowerBIPS.psm1" -Force
+Import-Module "$currentPath\..\PowerBIPS" -Force
 
 $testType = 4
 
