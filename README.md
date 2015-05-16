@@ -25,6 +25,88 @@ For a better experience please install this module on your UserProfile directory
 
 ![](https://github.com/DevScope/powerbi-powershell-modules/blob/master/Images/PowerBIPS.PNG)
 
+## Sample Script 1 (Send CSV Data To PowerBI)
+
+```powershell
+
+while($true)
+{
+	# Iterate each CSV file and add to a hashtable with a key for each table that will later be sent to PowerBI
+	
+	Get-ChildItem "$currentPath\CSVData" -Filter "*.csv" |% {
+		
+		$tableName = $_.BaseName.Split('.')[0]
+
+		$data = Import-Csv $_.FullName					
+		
+		# Send data to PowerBI
+		
+		$data | Out-PowerBI -dataSetName "CSVSales" -tableName "Sales" -types @{"Sales.OrderDate"="datetime"; "Sales.SalesAmount"="double"; "Sales.Freight"="double"} -batchSize 300 -verbose	
+		
+		# Archive the file
+		
+		Move-Item $_.FullName "$currentPath\CSVData\Archive" -Force
+	}
+	
+	Write-Output "Sleeping..."
+	
+	Sleep -Seconds 5
+}
+
+```
+
+## Sample Script 2 (Manual DataSet creation)
+
+```powershell
+
+cls
+$ErrorActionPreference = "Stop"
+
+Import-Module PowerBIPS -Force
+
+# Get the authentication token using ADAL library (OAuth)
+$authToken = Get-PBIAuthToken
+
+# Test the existence of the dataset
+if (-not (Test-PBIDataSet -authToken $authToken -dataSetName "TestDataSet"))
+{
+	# If cannot find the DataSet create a new one with this schema
+	$dataSetSchema = @{
+		name = "TestDataSet"	
+	    ; tables = @(
+			@{ 	name = "TestTable"
+				; columns = @( 
+					@{ name = "Id"; dataType = "Int64"  }
+					, @{ name = "Name"; dataType = "String"  }
+					, @{ name = "Date"; dataType = "DateTime"  }
+					, @{ name = "Value"; dataType = "Double"  }
+					) 
+			})
+	}	
+	
+	$createdDataSet = New-PBIDataSet -authToken $authToken -dataSet $dataSetSchema -Verbose
+}
+else
+{
+	# Clear all the rows of the dataset table	
+	Clear-PBITableRows -authToken $authToken -dataSetName "TestDataSet" -tableName "TestTable" -Verbose
+}
+
+# Create a array of sample rows with the same schema of the dataset table
+$sampleRows = 1..53 |% {	
+	@{
+		Id = $_
+		; Name = "Record $_"
+		; Date = [datetime]::Now
+		; Value = (Get-Random -Minimum 10 -Maximum 1000)
+	}
+}
+
+# Insert the sample rows in batches of 10
+$sampleRows | Add-PBITableRows -authToken $authToken -dataSetName "TestDataSet" -tableName "TestTable" -batchSize 10 -Verbose
+
+```
+
 ## <a name="OutPowerBI"></a>Out-PowerBI - Simply send any data to PowerBI in a single line of code
 
 ```powershell
@@ -139,86 +221,5 @@ $tableSchema =  @{
 }
 
 Update-PBITableSchema -authToken $authToken -dataSetId "<dataSetId>" -table $tableSchema -verbose
-
-```
-## Sample Script 1 (Send CSV Data To PowerBI)
-
-```powershell
-
-while($true)
-{
-	# Iterate each CSV file and add to a hashtable with a key for each table that will later be sent to PowerBI
-	
-	Get-ChildItem "$currentPath\CSVData" -Filter "*.csv" |% {
-		
-		$tableName = $_.BaseName.Split('.')[0]
-
-		$data = Import-Csv $_.FullName					
-		
-		# Send data to PowerBI
-		
-		$data | Out-PowerBI -dataSetName "CSVSales" -tableName "Sales" -types @{"Sales.OrderDate"="datetime"; "Sales.SalesAmount"="double"; "Sales.Freight"="double"} -batchSize 300 -verbose	
-		
-		# Archive the file
-		
-		Move-Item $_.FullName "$currentPath\CSVData\Archive" -Force
-	}
-	
-	Write-Output "Sleeping..."
-	
-	Sleep -Seconds 5
-}
-
-```
-
-## Sample Script 2 (Manual DataSet creation)
-
-```powershell
-
-cls
-$ErrorActionPreference = "Stop"
-
-Import-Module PowerBIPS -Force
-
-# Get the authentication token using ADAL library (OAuth)
-$authToken = Get-PBIAuthToken
-
-# Test the existence of the dataset
-if (-not (Test-PBIDataSet -authToken $authToken -dataSetName "TestDataSet"))
-{
-	# If cannot find the DataSet create a new one with this schema
-	$dataSetSchema = @{
-		name = "TestDataSet"	
-	    ; tables = @(
-			@{ 	name = "TestTable"
-				; columns = @( 
-					@{ name = "Id"; dataType = "Int64"  }
-					, @{ name = "Name"; dataType = "String"  }
-					, @{ name = "Date"; dataType = "DateTime"  }
-					, @{ name = "Value"; dataType = "Double"  }
-					) 
-			})
-	}	
-	
-	$createdDataSet = New-PBIDataSet -authToken $authToken -dataSet $dataSetSchema -Verbose
-}
-else
-{
-	# Clear all the rows of the dataset table	
-	Clear-PBITableRows -authToken $authToken -dataSetName "TestDataSet" -tableName "TestTable" -Verbose
-}
-
-# Create a array of sample rows with the same schema of the dataset table
-$sampleRows = 1..53 |% {	
-	@{
-		Id = $_
-		; Name = "Record $_"
-		; Date = [datetime]::Now
-		; Value = (Get-Random -Minimum 10 -Maximum 1000)
-	}
-}
-
-# Insert the sample rows in batches of 10
-$sampleRows | Add-PBITableRows -authToken $authToken -dataSetName "TestDataSet" -tableName "TestTable" -batchSize 10 -Verbose
 
 ```
