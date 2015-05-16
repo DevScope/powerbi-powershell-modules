@@ -25,7 +25,7 @@ For a better experience please install this module on your UserProfile directory
 
 ![](https://github.com/DevScope/powerbi-powershell-modules/blob/master/Images/PowerBIPS.PNG)
 
-## <a name="OutPowerBI"></a>Simply sends data to PowerBI
+## <a name="OutPowerBI"></a>Out-PowerBI - Simply send any data to PowerBI in a single line of code
 
 ```powershell
 
@@ -39,7 +39,7 @@ Import-Csv "c:\csvData.csv" | Out-PowerBI -dataSetName "CSVSales" -tableName "Sa
 	
 ```
 
-## <a name="GetPBIAuthToken"></a>Get PowerBI Authentication Token
+## <a name="GetPBIAuthToken"></a>Get-PBIAuthToken - Get's the OAuth PowerBI Authentication Token
 
 ```powershell
 
@@ -50,7 +50,7 @@ $authTokenWithUsername = Get-PBIAuthToken -clientId "4c3c58d6-8c83-48c2-a604-67c
 
 ```
 
-## <a name="GetPBIDataSet"></a>Get a DataSet or a List of DataSets
+## <a name="GetPBIDataSet"></a>Get-PBIDataSet - Get a DataSet or a List of DataSets
 
 ```powershell
 
@@ -62,7 +62,7 @@ $dataSets = Get-PBIDataSet -authToken $authToken -dataSetName "TestDataSet"
 
 ```
 
-## <a name="TestPBIDataSet"></a>Test the existence of a DataSet
+## <a name="TestPBIDataSet"></a>Test-PBIDataSet - Test the existence of a DataSet
 
 ```powershell
 
@@ -77,7 +77,7 @@ else
 
 ```
 
-## <a name="NewPBIDataSet"></a>Create a DataSet
+## <a name="NewPBIDataSet"></a>New-PBIDataSet - Create a DataSet
 
 ```powershell
 
@@ -98,7 +98,7 @@ $createdDataSet = New-PBIDataSet -authToken $authToken -dataSet $dataSetSchema -
 
 ```
 
-## <a name="AddPBITableRows"></a>Add Rows to a table
+## <a name="AddPBITableRows"></a>Add-PBITableRows - Add Rows to a table
 
 ```powershell
 
@@ -117,7 +117,7 @@ $sampleRows | Add-PBITableRows -authToken $authToken -dataSetName "TestDataSet" 
 
 ```
 
-## <a name="ClearPBITableRows"></a>Delete Rows of a table
+## <a name="ClearPBITableRows"></a>Clear-PBITableRows - Delete Rows of a table
 
 ```powershell
 
@@ -125,7 +125,7 @@ Clear-PBITableRows -authToken $authToken -dataSetName "TestDataSet" -tableName "
 
 ```
 
-## <a name="UpdatePBITableSchema"></a>Update a Table Schema
+## <a name="UpdatePBITableSchema"></a>Update-PBITableSchema - Update a Table Schema
 
 ```powershell
 
