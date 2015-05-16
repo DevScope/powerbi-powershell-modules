@@ -2,7 +2,7 @@
 
 A PowerShell module for the new PowerBI developer REST APIs.
 
-Samples of usage at: 
+More samples of usage here: 
 
 * https://ruiromanoblog.wordpress.com/2015/03/03/create-a-real-time-it-dashboard-with-powerbips/
 * https://github.com/DevScope/powerbi-powershell-modules/blob/master/Modules/PowerBIPS/Samples
