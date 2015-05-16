@@ -4,61 +4,84 @@ $ErrorActionPreference = "Stop"
 
 $currentPath = (Split-Path $MyInvocation.MyCommand.Definition -Parent)
 
-Import-Module "$currentPath\..\PowerBIPS.psm1" -Force
+Import-Module "$currentPath\..\PowerBIPS" -Force
 
 # Get the authentication token using ADAL library (OAuth)
-$authToken = Get-PBIAuthToken -clientId "7a7be4f7-c64d-41da-94db-7fb8200f029c" -Verbose
+
+$authToken = Get-PBIAuthToken -Verbose
 
 # Test the existence of the dataset and if exists retrieve the metadata
-$dataSetMetadata = Get-PBIDataSet -authToken $authToken -dataSetName "IT Server Monitor" -Verbose
+$dataSetSchema = Get-PBIDataSet -authToken $authToken -name "IT Server Monitor" -Verbose
 
-if (-not $dataSetMetadata)
+if (-not $dataSetSchema)
 {
 	# If cannot find the DataSet create a new one with this schema	
 	
-	$dataSetSchema = @{
-		name = "IT Server Monitor"
-	    ; tables = @(
-			@{ 	name = "Processes"
-				; columns = @( 
-					@{ name = "ComputerName"; dataType = "String"  }					
-					, @{ name = "Date"; dataType = "DateTime"  }
-					, @{ name = "Hour"; dataType = "String"  }
-					, @{ name = "Id"; dataType = "String"  }
-					, @{ name = "ProcessName"; dataType = "String"  }
-					, @{ name = "CPU"; dataType = "Double"  }
-					, @{ name = "Memory"; dataType = "Double"  }
-					, @{ name = "Threads"; dataType = "Int64"  }					
-					) 
-			})
-	}	
+	$dataSetSchema = @{name = "IT Server Monitor"
+    ; tables = @(
+        @{name = "Counters"
+	    ; columns = @( 
+		        @{ name = "ComputerName"; dataType = "String"  }
+		        , @{ name = "TimeStamp"; dataType = "DateTime"  }	
+				, @{ name = "CounterSet"; dataType = "String"  }
+		        , @{ name = "CounterName"; dataType = "String"  }
+		        , @{ name = "CounterValue"; dataType = "Double"  }
+		        )}
+		, 
+		@{name = "CountersResume"
+	    ; columns = @( 
+		        @{ name = "ComputerName"; dataType = "String"  }
+		        , @{ name = "TimeStamp"; dataType = "DateTime"  }	
+				, @{ name = "CPU Time"; dataType = "Double"  }
+		        , @{ name = "Free Memory"; dataType = "Double"  }
+		        , @{ name = "Disk Time"; dataType = "Double"  }				
+		        )}
+    )}
 
-	$dataSetMetadata = New-PBIDataSet -authToken $authToken -dataSet $dataSetSchema -defaultRetentionPolicy "basicFIFO" -Verbose	
+	$dataSetSchema = New-PBIDataSet -authToken $authToken -dataSet $dataSetSchema -defaultRetentionPolicy "basicFIFO" -Verbose	
+}
+else
+{
+	# If a dataset exists, delete all its data
+	
+    Clear-PBITableRows -authToken $authToken -dataSetId $dataSetSchema.Id -tableName "Counters" -Verbose
+	Clear-PBITableRows -authToken $authToken -dataSetId $dataSetSchema.Id -tableName "CountersResume" -Verbose
 }
 
-# Create a array of sample rows with the same schema of the dataset table
+$computers = @($env:COMPUTERNAME)
 
-Clear-PBITableRows -authToken $authToken -dataSetId $dataSetMetadata.Id -tableName "Processes"
+# Collect data from continuosly in intervals of 5 seconds
 
-$computers = @(".")
+$counters = Get-Counter -ComputerName $computers -ListSet @("processor", "memory", "physicaldisk")
 
-while($true)
-{	
-	$computers |% {
+$counters | Get-Counter -Continuous -SampleInterval 5 |%{		
+	
+	# Parse the Counters into the schema of the PowerBI dataset
+	
+	$pbiData = $_.CounterSamples | Select  @{Name = "ComputerName"; Expression = {$_.Path.Split('\')[2]}} `
+			, @{Name="TimeStamp"; Expression = {$_.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss")}} `
+			, @{Name="CounterSet"; Expression = {$_.Path.Split('\')[3]}} `
+			, @{Name="CounterName"; Expression = {$_.Path.Split('\')[4]}} `
+			, @{Name="CounterValue"; Expression = {$_.CookedValue}}
+			
+	$pbiData | Add-PBITableRows -authToken $authToken -dataSetId $dataSetSchema.Id -tableName "Counters" -batchSize 100 -Verbose        
+	
+	# Get the Resume Data by Computer
+	
+	$pbiResumeData = $pbiData | Group ComputerName |% {
 		
-		$computerName = $_
+		$cpuCounter = $_.Group |? { $_.CounterSet -eq "Processor(_Total)" -and $_.CounterName -eq "% Processor Time" }
+		$memoryCounter = $_.Group |? { $_.CounterSet -eq "Memory" -and $_.CounterName -eq "Available MBytes" }
+		$diskCounter = $_.Group |? { $_.CounterSet -eq "PhysicalDisk(_Total)" -and $_.CounterName -eq "% Disk Time" }
 		
-		$timeStamp = [datetime]::Now
-		
-		# Dates sent as string because of an issue with ConvertTo-Json (alternative is to convert each object to a hashtable)
-		
-		Get-Process -ComputerName $computerName | Select  @{Name = "ComputerName"; Expression = {$computerName}} `
-			, @{Name="Date"; Expression = {$timeStamp.Date.ToString("yyyy-MM-dd")}} `
-			, @{Name="Hour"; Expression = {$timeStamp.ToString("HH:mm:ss")}} `
-			, Id, ProcessName, CPU, @{Name='Memory';Expression={($_.WorkingSet/1MB)}}, @{Name='Threads';Expression={($_.Threads.Count)}} `
-		| Add-PBITableRows -authToken $authToken -dataSetId $dataSetMetadata.Id -tableName "Processes" -batchSize -1 -Verbose
-		
+		Write-Output @(
+			@{"ComputerName" = $_.Name
+				; "TimeStamp" = $cpuCounter.TimeStamp
+				; "CPU Time" = $cpuCounter.CounterValue
+				; "Free Memory" = $memoryCounter.CounterValue
+				; "Disk Time" = $diskCounter.CounterValue}
+		)
 	}
 	
-	sleep -Seconds 10
+	$pbiResumeData | Add-PBITableRows -authToken $authToken -dataSetId $dataSetSchema.Id -tableName "CountersResume" -batchSize 10 -Verbose	
 }

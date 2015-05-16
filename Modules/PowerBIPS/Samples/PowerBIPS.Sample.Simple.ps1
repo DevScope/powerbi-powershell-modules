@@ -4,13 +4,17 @@ $ErrorActionPreference = "Stop"
 
 $currentPath = (Split-Path $MyInvocation.MyCommand.Definition -Parent)
 
-Import-Module "$currentPath\..\PowerBIPS.psm1" -Force
+Import-Module "$currentPath\..\PowerBIPS" -Force
 
 # Get the authentication token using ADAL library (OAuth)
-$authToken = Get-PBIAuthToken -clientId "7a7be4f7-c64d-41da-94db-7fb8200f029c"
+
+$authToken = Get-PBIAuthToken
 
 # Test the existence of the dataset
-if (-not (Test-PBIDataSet -authToken $authToken -dataSetName "TestDataSet"))
+
+$dataSetSchema = Get-PBIDataSet -authToken $authToken -name "TestDataSet"
+
+if (-not $dataSetSchema)
 {
 	# If cannot find the DataSet create a new one with this schema
 	
@@ -36,7 +40,8 @@ else
 }
 
 # Create a array of sample rows with the same schema of the dataset table
-$sampleRows = 1..53 |% {	
+
+$sampleRows = 1..55 |% {	
 	@{
 		Id = $_
 		; Name = "Record $_"
@@ -46,4 +51,5 @@ $sampleRows = 1..53 |% {
 }
 
 # Insert the sample rows in batches of 10
-$sampleRows | Add-PBITableRows -authToken $authToken -dataSetName "TestDataSet" -tableName "TestTable" -batchSize 10 -Verbose
+
+$sampleRows | Add-PBITableRows -authToken $authToken -dataSetName "TestDataSet" -tableName "TestTable" -batchSize 25 -Verbose

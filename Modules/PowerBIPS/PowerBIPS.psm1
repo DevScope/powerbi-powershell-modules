@@ -34,8 +34,9 @@ THE SOFTWARE.
 
 $pbiAuthorityUrl = "https://login.windows.net/common/oauth2/authorize"
 $pbiResourceUrl = "https://analysis.windows.net/powerbi/api"
-$pbiApiUrl = "https://api.powerbi.com/beta/myorg/datasets"
+$pbiAPIDataSetsUrl = "https://api.powerbi.com/beta/myorg/datasets"
 $pbiDefaultAuthRedirectUri = "https://login.live.com/oauth20_desktop.srf"
+$pbiDefaultClientId = "d57ac8af-1019-431d-8fed-5fd8db180388"
 
 #endregion
 
@@ -52,7 +53,7 @@ Function Get-PBIAuthToken{
 	It will automatically download and install the required nuget: "Microsoft.IdentityModel.Clients.ActiveDirectory".		
 
 .PARAMETER ClientId
-    The Client Id of the native application created in windows azure active directory of the PowerBI tenant
+    The Client Id of the Azure AD application
 
 .PARAMETER UserName
     The username used to authenticate with PowerBI
@@ -74,14 +75,14 @@ Function Get-PBIAuthToken{
         Gets the authentication token after authenticate with PowerShell with the supplied username and password
 
 #>
-	[CmdletBinding(DefaultParameterSetName = "S2")]	
+	[CmdletBinding(DefaultParameterSetName = "default")]	
 	[OutputType([string])]
 	param(				
-			[Parameter(Mandatory=$true)] [string] $clientId,
-			[Parameter(Mandatory=$true, ParameterSetName = "S1")] [string] $userName,
-			[Parameter(Mandatory=$true, ParameterSetName = "S1")] [string] $password,	
-			[Parameter(Mandatory=$false, ParameterSetName = "S2")] [string] $redirectUri,
-			[Parameter(Mandatory=$false, ParameterSetName = "S2")] [switch] $forceAskCredentials = $false
+			[Parameter(Mandatory=$false)] [string] $clientId = $pbiDefaultClientId,
+			[Parameter(Mandatory=$true, ParameterSetName = "username")] [string] $userName,
+			[Parameter(Mandatory=$true, ParameterSetName = "username")] [string] $password,	
+			[Parameter(Mandatory=$false, ParameterSetName = "default")] [string] $redirectUri,
+			[Parameter(Mandatory=$false, ParameterSetName = "default")] [switch] $forceAskCredentials = $false			
 		)
 
 	begin{
@@ -94,136 +95,172 @@ Function Get-PBIAuthToken{
 	
 		if ($script:authContext -eq $null)
 		{
-			Write-Verbose "Creating new AuthenticationContext object"
-			$tokenCache = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.TokenCache
-			$script:authContext = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext($pbiAuthorityUrl, $tokenCache)
+			Write-Verbose "Creating new AuthenticationContext object"			
+			$script:authContext = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext($pbiAuthorityUrl)
 		}				
 		
-		if ([string]::IsNullOrEmpty($script:authToken))
+		Write-Verbose "Getting the Authentication Token"						
+			
+		if ($PsCmdlet.ParameterSetName -eq "username")
 		{
-			Write-Verbose "Getting new Authentication Token"						
-				
-			if ($PsCmdlet.ParameterSetName -eq "S1")
-			{
-				$userCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.UserCredential($userName, $password)
-				
-				$authResult = $authContext.AcquireToken($pbiResourceUrl,$clientId, $userCredential)
-			}
-			else
-			{
-				if ([string]::IsNullOrEmpty($redirectUri))
-				{
-					$redirectUri = $pbiDefaultAuthRedirectUri
-				}
-				
-				$promptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Auto
-				
-				if ($forceAskCredentials)
-				{
-					$promptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Always
-				}
-				
-				$authResult = $authContext.AcquireToken($pbiResourceUrl,$clientId, [Uri]$redirectUri, $promptBehavior)			
-			}							
+			Write-Verbose "Using username+password authentication flow"	
+			
+			$userCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.UserCredential($userName, $password)
+			
+			$authResult = $script:authContext.AcquireToken($pbiResourceUrl,$clientId, $userCredential)
 		}
 		else
 		{
-			Write-Verbose "Refreshing Authentication Token"
+			Write-Verbose "Using default authentication flow"	
 			
-			$authResult = $authContext.AcquireTokenSilent($pbiResourceUrl,$clientId)
+			if ([string]::IsNullOrEmpty($redirectUri))
+			{
+				$redirectUri = $pbiDefaultAuthRedirectUri
+			}
+			
+			$promptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Auto
+			
+			if ($forceAskCredentials)
+			{
+				$promptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Always
+			}
+			
+			$authResult = $script:authContext.AcquireToken($pbiResourceUrl,$clientId, [Uri]$redirectUri, $promptBehavior)			
 		}		
 
 		Write-Verbose "Authenticated as $($authResult.UserInfo.DisplayableId)"
 		
-		$script:authToken = $authResult.CreateAuthorizationHeader()
+		$authToken = $authResult.AccessToken
 		
-		return $script:authToken;
+		return $authToken;
 	
 	}
 }
 
-Function Get-PBIDataSets{ 
+Function Get-PBIDataSet{
 <#
-.SYNOPSIS
-    Gets all the PowerBI existing datasets and returns them as an array of custom objects.
+.SYNOPSIS    
+	Gets all the PowerBI existing datasets and returns as an array of custom objects.
+	Or
+	Check if a dataset exists with the specified name and if exists returns it's metadata
 
 .DESCRIPTION	
 	Gets all the PowerBI existing datasets and returns as an array of custom objects.
-	
-	Sample of the returned array:
-		
-	id                                                    name                                                  defaultRetentionPolicy
-	--                                                    ----                                                  ----------------------                               
-	d6f2df49-dab5-4382-a917-9aa2ddc99993                  SQL - AdventureWorks - Model                          None
-	3313cdf3-309c-4cb5-8597-5b7dd8b87d15                  DomusSocial_ParqueHabitacional                        None
-
-.PARAMETER AuthToken
-    The authorization token required to comunicate with the PowerBI APIs
-	Use 'Get-PBIAuthToken' to get the authorization token string
-
- .EXAMPLE
-        Get-PBIDataSets -authToken (Get-PBIAuthToken -clientId "4c3c58d6-8c83-48c2-a604-67c1b740d167")         
-
-#>
-	[CmdletBinding()]	
-	param(									
-		[Parameter(Mandatory=$true)] [string] $authToken
-	)
-		
-	$headers = (Get-PowerBIRequestHeader $authToken)
-	
-	Write-Verbose "Getting DataSets"
-	
-	$result = Invoke-RestMethod -Uri $pbiApiUrl -Headers $headers -Method Get 
-	
-	Write-Verbose "Found $($result.datasets.count) datasets."
-	
-	Write-Output $result.datasets
-}
-
-Function Get-PBIDataSet{
-<#
-.SYNOPSIS
-    Gets a DataSet by name
-
-.DESCRIPTION	
+	Or
 	Check if a dataset exists with the specified name and if exists returns it's metadata
 
 .PARAMETER AuthToken
     The authorization token required to communicate with the PowerBI APIs
 	Use 'Get-PBIAuthToken' to get the authorization token string
 
-.PARAMETER DataSetName
+.PARAMETER Name
     The dataset name		
 	
+.PARAMETER Id
+    The dataset id
+	
+.PARAMETER IncludeDefinition
+    If specified will include the dataset definition properties
+	
+.PARAMETER IncludeTables
+    If specified will include the dataset tables
+	
 .EXAMPLE
-								
-		$dataSet = Get-PBIDataSet -authToken $authToken -dataSetName "DataSetName"
-		Returns the dataset metadata
+			
+		Get-PBIDataSet -authToken $authToken
+		Get-PBIDataSet -authToken $authToken -name "DataSetName"		
+		Get-PBIDataSet -authToken $authToken -name "DataSetName" -includeDefinition -includeTables
 
 #>
 	[CmdletBinding()]		
 	param(									
-		[Parameter(Mandatory=$true)] [string] $authToken,
-		[Parameter(Mandatory=$true)] $dataSetName		
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $name,
+		[Parameter(Mandatory=$false)] [string] $id,
+		[Parameter(Mandatory=$false)] [switch] $includeDefinition,
+		[Parameter(Mandatory=$false)] [switch] $includeTables
+		
 	)
-		
-	Write-Verbose "Checking if the dataset '$dataSetName' already exists"
-		
-	$dataSets = Get-PBIDataSets -authToken $authToken
 	
-	$result = $dataSets |? name -eq $dataSetName | select -First 1
-		
-	if ($result)
+	$headers = (Get-PowerBIRequestHeader $authToken)
+	
+	if ([string]::IsNullOrEmpty($id))
 	{
-		Write-Verbose "Dataset '$dataSetName' exists"				
+		Write-Verbose "Getting DataSets"
+		
+		$result = Invoke-RestMethod -Uri $pbiAPIDataSetsUrl -Headers $headers -Method Get 
+			
+		Write-Verbose "Found $($result.datasets.count) datasets."
+		
+		$dataSets = $result.datasets
+		
+		# if IncludeDefinition is true then go get the definition of the dataset and change the PSObject
+		
+		if ($includeDefinition)
+		{				
+			$dataSets |% {
+				$dataSet = $_
+				
+				$dataSetDefinition = Get-PBIDataSet -authToken $authToken -id $_.Id -ErrorAction Continue
+				
+				$dataSetDefinition | Get-Member -MemberType NoteProperty |%{
+					
+					if (-not $dataSet.$($_.Name))
+					{
+						$dataSet | Add-Member -MemberType NoteProperty -Name $_.Name -Value $dataSetDefinition.$($_.Name)
+					}
+				}								
+			}
+		}
 	}
 	else
 	{
-		Write-Verbose "Dataset '$dataSetName' does not exist"				
+		Write-Verbose "Getting DataSet Definition"
+		
+		$result = Invoke-RestMethod -Uri "$pbiAPIDataSetsUrl/$id" -Headers $headers -Method Get 
+		
+		$result | Add-Member -MemberType NoteProperty -Name "id" -Value $id
+		
+		$dataSets = @($result)		
 	}
 	
-	Write-Output $result
+	# if IncludeTables is true then call the GetTables API
+	
+	if ($includeTables)
+	{				
+		$dataSets |% {
+			$dataSet = $_
+			
+			$tables = Get-PBIDataSetTables -authToken $authToken -id $_.Id -ErrorAction Continue
+			
+			$dataSet | Add-Member -MemberType NoteProperty -Name "tables" -Value $tables										
+		}
+	}
+		
+	if (-not [string]::IsNullOrEmpty($name))
+	{
+		Write-Verbose "Searching for the dataset '$name'"		
+		
+		$result = $dataSets |? name -eq $name | select -First 1
+		
+		if ($result)
+		{
+			Write-Verbose "Found dataset '$name'"
+			Write-Output $result
+		}
+		else
+		{
+			Write-Verbose "Cannot find dataset '$name'"				
+		}				
+	}
+	elseif(-not [string]::IsNullOrEmpty($id))
+	{
+		Write-Output $datasets[0]
+	}
+	else
+	{
+		Write-Output $dataSets
+	}
 }
 
 Function Test-PBIDataSet{
@@ -238,23 +275,23 @@ Function Test-PBIDataSet{
     The authorization token required to communicate with the PowerBI APIs
 	Use 'Get-PBIAuthToken' to get the authorization token string
 
-.PARAMETER DataSetName
+.PARAMETER Name
     The dataset name		
 	
 .EXAMPLE
 								
-		Test-PBIDataSet -authToken $authToken -dataSetName "DataSetName"
+		Test-PBIDataSet -authToken $authToken -name "DataSetName"
 		Returns $true if the dataset exists
 
 #>
 	[CmdletBinding()]	
 	[OutputType([bool])]
 	param(									
-		[Parameter(Mandatory=$true)] [string] $authToken,
-		[Parameter(Mandatory=$true)] $dataSetName		
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$true)] $name		
 	)
 			
-	$dataSet = Get-PBIDataSet -authToken $authToken -dataSetName $dataSetName
+	$dataSet = Get-PBIDataSet -authToken $authToken -name $name
 	
 	if ($dataSet)
 	{				
@@ -311,7 +348,8 @@ Function New-PBIDataSet{
 	param(									
 		[Parameter(Mandatory=$true)] [string] $authToken,
 		[Parameter(Mandatory=$true, HelpMessage = "Must be of type [hashtable] or [dataset]")] $dataSet,
-		[Parameter(Mandatory=$false)] [string]$defaultRetentionPolicy
+		[Parameter(Mandatory=$false)] [string]$defaultRetentionPolicy,
+		[Parameter(Mandatory=$false)] [hashtable]$types
 	)
 		
 	$headers = (Get-PowerBIRequestHeader $authToken)
@@ -320,32 +358,93 @@ Function New-PBIDataSet{
 	{
 		Assert-DataSetObjectSchema $dataSet				
 	}
+	elseif ($dataSet -is [System.Data.DataSet])
+	{
+		$dataSet = ConvertTo-PBIDataSet $dataSet
+	}
 	else
 	{
-		if ($dataSet -is [System.Data.DataSet])
-		{
-			$dataSet = Convert-DataSetToPBIDataSet $dataSet
-		}		
-		else
-		{
-			throw "Invalid 'dataSet' type, must be of type [hashtable] or [dataset]"
-		}
+		throw "Invalid 'dataSet' type, must be of type [hashtable] or [dataset]"
 	}
 	
-	$jsonBody = $dataSet | ConvertTo-Json -Depth 4
+	$jsonBody = ConvertTo-PBIJson -obj $dataSet -types $types
 	
 	Write-Verbose "Creating new dataset"	
 		
 	if (-not [string]::IsNullOrEmpty($defaultRetentionPolicy))
 	{
-		$pbiApiUrl += "?defaultRetentionPolicy=$defaultRetentionPolicy"
+		$pbiAPIDataSetsUrl += "?defaultRetentionPolicy=$defaultRetentionPolicy"
 	}
 	
-	$result = Invoke-RestMethod -Uri $pbiApiUrl -Headers $headers -Method Post -Body $jsonBody  					
+	$result = Invoke-RestMethod -Uri $pbiAPIDataSetsUrl -Headers $headers -Method Post -Body $jsonBody  					
 	
 	Write-Verbose "DataSet created with id: '$($result.id)"
 	
 	Write-Output $result
+}
+
+Function Update-PBITableSchema{
+<#
+.SYNOPSIS
+    Updates a PowerBI Dataset Table Schema.
+	Note: This operation will delete all the table rows
+
+.DESCRIPTION	
+	Updates a PowerBI Dataset Table Schema	
+
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+
+.PARAMETER Table
+    The table object, this object must be one of two types: hashtable or System.Data.DataTable
+	
+	If a hashtable is supplied it must have the following structure:
+		
+		$table = @{ 
+					name = "TableName"
+					; columns = @( 
+						@{ name = "Col1"; dataType = "Int64"  }
+						, @{ name = "Col2"; dataType = "string"  }
+						) 
+				}
+
+.EXAMPLE
+								
+		Update-PBITableSchema -authToken $authToken -dataSetId <dataSetId> -table <tableSchema>		
+
+#>
+	[CmdletBinding()]	
+	param(									
+		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$true)] [string] $dataSetId,				
+		[Parameter(Mandatory=$true, HelpMessage = "Must be of type [hashtable] or [datatable]")] $table,
+		[Parameter(Mandatory=$false)] [hashtable] $types
+	)
+						
+	$headers = (Get-PowerBIRequestHeader $authToken)
+	
+	if ($table -is [hashtable])
+	{
+		Assert-DataSetTableObjectSchema $table			
+	}
+	elseif ($table -is [System.Data.DataTable])
+	{				
+		$table = ConvertTo-PBITableFromDataTable $table					
+	}
+	else
+	{
+		throw "Invalid 'table' type, must be of type [hashtable] or [dataset]"
+	}
+	
+	$jsonBody = ConvertTo-PBIJson -obj $table -types $types
+		
+	Write-Verbose "Updating Table Schema of '$($table.Name)' on DataSet '$dataSetId'"	
+	
+	$result = Invoke-RestMethod -Uri "$pbiAPIDataSetsUrl/$dataSetId/tables/$($table.Name)" -Headers $headers -Method PUT -Body $jsonBody  					
+	
+	Write-Verbose "Table schema updated"
+		
 }
 
 Function Add-PBITableRows{  	
@@ -395,7 +494,7 @@ Function Add-PBITableRows{
 		[Parameter(Mandatory=$true, ParameterSetName = "dataSetName")] [string] $dataSetName,
 		[Parameter(Mandatory=$true)] [string] $tableName,
 		[Parameter(Mandatory=$true, ValueFromPipeline = $true)] $rows,
-		[Parameter(Mandatory=$false)] [int] $batchSize = 100
+		[Parameter(Mandatory=$false)] [int] $batchSize = 1000
 	)
 	
 	begin{
@@ -406,7 +505,7 @@ Function Add-PBITableRows{
 		
 		if ($PsCmdlet.ParameterSetName -eq "dataSetName")
 		{
-			$dataSet = Get-PBIDataSet -authToken $authToken -dataSetName $dataSetName
+			$dataSet = Get-PBIDataSet -authToken $authToken -name $dataSetName
 			
 			if (-not $dataSet)
 			{
@@ -416,7 +515,7 @@ Function Add-PBITableRows{
 			$dataSetId = $dataSet.Id
 		}
 		
-		$url = "$pbiApiUrl/$dataSetId/tables/$tableName/rows"
+		$url = "$pbiAPIDataSetsUrl/$dataSetId/tables/$tableName/rows"
 	}
 	process{
 		
@@ -442,61 +541,6 @@ Function Add-PBITableRows{
 		}		
 	}					
 }
-
-Function Clear-PBITableRows{  	
-<#
-.SYNOPSIS
-    Delete all the rows of a PowerBI dataset table
-
-.DESCRIPTION	
-	Delete all the rows of a PowerBI dataset table		
-
-.PARAMETER AuthToken
-    The authorization token required to comunicate with the PowerBI APIs
-	Use 'Get-PBIAuthToken' to get the authorization token string
-
-.PARAMETER DataSetId
-    The id of the dataset in PowerBI
-
-.PARAMETER TableName
-    The name of the table of the dataset
-
-.EXAMPLE
-        Get-PBIDataSets -authToken (Get-PBIAuthToken -clientId "4c3c58d6-8c83-48c2-a604-67c1b740d167")         
-
-#>
-	[CmdletBinding()]
-	[CmdletBinding(DefaultParameterSetName = "dataSetId")]	
-	param(									
-		[Parameter(Mandatory=$true)] [string] $authToken,
-		[Parameter(Mandatory=$true, ParameterSetName = "dataSetId")] [string] $dataSetId,
-		[Parameter(Mandatory=$true, ParameterSetName = "dataSetName")] [string] $dataSetName,
-		[Parameter(Mandatory=$true)] [string] $tableName
-	)
-	
-	$headers = (Get-PowerBIRequestHeader $authToken)
-	
-	if ($PsCmdlet.ParameterSetName -eq "dataSetName")
-	{
-		$dataSet = Get-PBIDataSet -authToken $authToken -dataSetName $dataSetName
-		
-		if (-not $dataSet)
-		{
-			throw "Cannot find a DataSet named '$dataSetName'"
-		}
-		
-		$dataSetId = $dataSet.Id
-	}
-		
-	$url = "$pbiApiUrl/$dataSetId/tables/$tableName/rows"
-			
-	Write-Verbose "Deleting all the rows of '$tableName' table of dataset '$dataSetId'"
-	
-	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Delete
-	
-}
-
-#region Private Methods
 
 Function Add-PBITableRowsInternal{  		
 	param(									
@@ -534,10 +578,304 @@ Function Add-PBITableRowsInternal{
 				
 	Write-Verbose "Adding a batch of '$($rows.Count)' rows into '$tableName' table of dataset '$dataSetId'"
 	
-	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $bodyObj 
+	if ($bodyObj -match """value"":.+\/Date\(")
+	{
+		Write-Warning "There's an issue with [datetime] and ConvertTo-Json... As an workaround please use -Types parameter to force the column type as [datetime] for example: -Types @{""Table.Date""=""datetime""} and set the row values as string like '$_.ToString(""yyyy-MM-dd"")'"
+	}
+	
+	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $bodyObj
 }
 
-Function Convert-DataSetToPBIDataSet($dataSet)
+
+Function Clear-PBITableRows{  	
+<#
+.SYNOPSIS
+    Delete all the rows of a PowerBI dataset table
+
+.DESCRIPTION	
+	Delete all the rows of a PowerBI dataset table		
+
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+
+.PARAMETER DataSetId
+    The id of the dataset in PowerBI
+
+.PARAMETER TableName
+    The name of the table of the dataset
+
+.EXAMPLE
+        Clear-PBITableRows -authToken "authToken" -DataSetId "DataSetId" -TableName "Table"
+
+#>
+	[CmdletBinding()]
+	[CmdletBinding(DefaultParameterSetName = "dataSetId")]	
+	param(									
+		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$true, ParameterSetName = "dataSetId")] [string] $dataSetId,
+		[Parameter(Mandatory=$true, ParameterSetName = "dataSetName")] [string] $dataSetName,
+		[Parameter(Mandatory=$true)] [string] $tableName
+	)
+	
+	$headers = (Get-PowerBIRequestHeader $authToken)
+	
+	if ($PsCmdlet.ParameterSetName -eq "dataSetName")
+	{
+		$dataSet = Get-PBIDataSet -authToken $authToken -name $dataSetName
+		
+		if (-not $dataSet)
+		{
+			throw "Cannot find a DataSet named '$dataSetName'"
+		}
+		
+		$dataSetId = $dataSet.Id
+	}
+		
+	$url = "$pbiAPIDataSetsUrl/$dataSetId/tables/$tableName/rows"
+			
+	Write-Verbose "Deleting all the rows of '$tableName' table of dataset '$dataSetId'"
+	
+	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Delete
+	
+}
+
+<#
+.SYNOPSIS
+    A one line cmdlet that you can use to send data into PowerBI
+
+.DESCRIPTION	
+		
+
+.PARAMETER Data
+    The data that will be sent to PowerBI
+
+.PARAMETER ClientId
+    The Client Id of the Azure AD application
+
+.PARAMETER AuthToken
+    The AccessToken - Optional
+
+.PARAMETER UserName
+    The Username - Optional
+
+.PARAMETER Password
+    The Password - Optional
+
+.PARAMETER DataSetName
+    The name of the dataset - Optional, by default will always create a new dataset with a timestamp
+
+.PARAMETER TableName
+    The name of the table in the DataSet - Optional, by default will be named "Table"
+
+.PARAMETER BatchSize
+    The size of the batch that is sent to PowerBI as HttpPost.
+	
+	If for example the batch size is 100 and a collection of
+	1000 rows are being pushed then this cmdlet will make 10 
+	HttpPosts
+
+.PARAMETER MultipleTables
+    A indication that the hashtable passed is a multitable
+	
+.EXAMPLE
+        Get-Process | Out-PowerBI -clientId "7a7be4f7-c64d-41da-94db-7fb8200f029c"
+		
+		1..53 |% {	
+			@{
+				Id = $_
+				; Name = "Record $_"
+				; Date = [datetime]::Now
+				; Value = (Get-Random -Minimum 10 -Maximum 1000)
+			}
+		} | Out-PowerBI -clientId "7a7be4f7-c64d-41da-94db-7fb8200f029c"  -verbose
+
+#>
+Function Out-PowerBI{
+	[CmdletBinding(DefaultParameterSetName = "authToken")]		
+	param(						
+		[Parameter(ValueFromPipeline=$true)] $data,
+		[Parameter(Mandatory=$false)] [string] $clientId = $pbiDefaultClientId,
+		[Parameter(Mandatory=$false, ParameterSetName = "authToken")] [string] $authToken,
+		[Parameter(Mandatory=$true, ParameterSetName = "username")] [string] $userName,
+		[Parameter(Mandatory=$true, ParameterSetName = "username")] [string] $password,	
+		[Parameter(Mandatory=$false)] [string] $dataSetName	= ("PowerBIPS_{0:yyyyMMdd_HHmmss}"	-f (Get-Date)),	
+		[Parameter(Mandatory=$false)] [string] $tableName	= "Table",
+		[Parameter(Mandatory=$false)] [int] $batchSize = 1000,	
+		# Need this because $data could be an hashtable (multiple tables) and the rows also can be hashtables...
+		[Parameter(Mandatory=$false)] [switch] $multipleTables,
+		[Parameter(Mandatory=$false)] [switch] $forceAskCredentials,
+		[Parameter(Mandatory=$false)] [switch] $forceTableSchemaUpdate,
+		[Parameter(Mandatory=$false)] [hashtable]$types
+	)
+	
+	begin {
+		$dataToProcess = @()		
+	}
+	process {
+	
+		$dataToProcess += $data
+		
+	}
+	end {
+		if ($dataToProcess.Count -eq 0)
+		{
+			Write-Verbose "There is no data to process"
+			return
+		}
+		
+		if ($PsCmdlet.ParameterSetName -eq "username")
+		{
+			$authToken = Get-PBIAuthToken -clientId $clientId -userName $userName -password $password
+		}
+		else
+		{
+			if ([string]::IsNullOrEmpty($authToken))
+			{
+				$authToken = Get-PBIAuthToken -clientId $clientId -forceAskCredentials:$forceAskCredentials
+			}
+		}
+
+        # Prepare the Data to be processed
+		
+		if ($dataToProcess.Count -eq 1)		
+		{
+			$dataToProcessSample = $dataToProcess[0]
+				
+			# If is a DataSet then transform to a hashtable with DataTables in it
+			if ($dataToProcessSample -is [System.Data.DataSet])
+			{
+				$dataToProcess = @{}
+					
+				$dataToProcessSample.Tables |% {
+					$dataToProcess.Add($_.TableName, $_);					
+				}
+			}			
+			elseif ($multipleTables -and ($dataToProcessSample -is [hashtable]))
+			{
+				$dataToProcess = $dataToProcess[0]
+			}
+			else
+			{
+				$dataToProcess = @{$tableName = $dataToProcess}
+				#throw "When -multipleTables is specified you must pass into -data an hashtable with a key for each table"
+			}
+		}		
+		else
+		{
+			$dataToProcess = @{$tableName = $dataToProcess}
+		}
+
+        # Remove empty tables
+
+        $tablesToRemove = $dataToProcess.GetEnumerator() |? {-not $_.Value } | Select -ExpandProperty Key 
+
+        $tablesToRemove |% {
+	        $dataToProcess.Remove($_)
+        }        
+		
+		# Create the DataSet in PowerBI (if not exists)
+		
+		$pbiDataSet = Get-PBIDataSet -authToken $authToken -name $dataSetName
+		
+		if ($pbiDataSet -eq $null -or $forceTableSchemaUpdate)
+		{		
+			# Create the DataSet schema object
+			
+			$dataSet = @{
+				name = $dataSetName
+			    ; tables = @()
+			}							
+					
+			# Process each table schema individually
+			
+			foreach ($h in ($dataToProcess.GetEnumerator() | sort Name)) {
+																
+				$dataSet.tables += ConvertTo-PBITable -obj $h.Value -name $h.Name
+			}				
+			
+			if ($pbiDataSet -eq $null)
+			{
+				$pbiDataSet = New-PBIDataSet -authToken $authToken -dataSet $dataSet -types $types
+			}
+			else
+			{
+				# Updates the schema of all the tables
+				$dataSet.tables |% {
+					Update-PBITableSchema -authToken $authToken -dataSetId $pbiDataSet.id -table $_ -types $types
+				}
+			}						
+		}
+			
+		# Upload rows for each table
+						
+		foreach ($h in ($dataToProcess.GetEnumerator() | sort Name)) {
+			
+			$tableName = $h.Name
+			
+			$tableData = ConvertTo-PBITableData $h.Value
+									
+			$tableData | Add-PBITableRows -authToken $authToken -dataSetId $pbiDataSet.Id -tableName $tableName -batchSize $batchSize
+		}				
+	}				
+}
+
+#region Private Methods
+
+Function Get-PBIDataSetTables{
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$true)] [string] $id		
+	)
+			
+	Write-Verbose "Getting DataSet '$id' Tables"
+		
+	$result = Invoke-RestMethod -Uri "$pbiAPIDataSetsUrl/$id/tables" -Headers $headers -Method Get 
+		
+	Write-Verbose "Found $($result.tables.count) tables"
+	
+	Write-Output $result.tables		
+}
+
+Function ConvertTo-PBIJson{
+	param(		
+			$obj,
+			[hashtable] $types
+		)
+		
+	$jsonBody = $obj | ConvertTo-Json -Depth 4
+	
+	# If custom types are defined change them	
+	
+	if ($types -ne $null -and $types.count -ne 0)
+	{
+		# Workaround to not have issues with DateTimes & ConvertTo-Json (http://stackoverflow.com/questions/26067906/format-a-datetime-in-powershell-to-json-as-date1411704000000)
+	
+		Write-Verbose "Changing dataset types"
+				
+		$jsonObj = ConvertFrom-Json $jsonBody
+		
+		$jsonObj.tables |% {
+			$table = $_
+			$table.columns |% {
+				
+				$typeKey = "$($table.name).$($_.name)"
+				
+				if ($types.containsKey($typeKey))
+				{
+					$_.dataType = $types[$typeKey]
+				}			
+			}
+		}
+		
+		$jsonBody = $jsonObj | ConvertTo-Json -Depth 4	
+	}
+	
+	$jsonBody
+}
+
+Function ConvertTo-PBIDataSet($dataSet)
 {
 	$ds = @{
 			name = $dataSet.DataSetName
@@ -545,39 +883,146 @@ Function Convert-DataSetToPBIDataSet($dataSet)
 				
 				$table = $_
 				
-				return @{ 
-					name = $table.TableName
-					; columns = $table.Columns |% {
-						$column = $_
-						
-						$columnTypeName = $column.DataType.Name
-						
-						$pbiTypeName = switch -regex ($column.DataType.Name) 
-					    { 
-					        "Int\d{2}" {"Int64"}
-							"Double|Decimal" {"Double"}
-							"Boolean" {"bool"}
-							"Datetime" {"Datetime"}
-							"String" {"String"}
-					        default {
-								throw "Type '$($column.DataType.Name)' not supported in PowerBI"
-								}
-					    }				
-														
-						return @{ name = $column.ColumnName; dataType = $pbiTypeName  }
-					}												
-				}							
+				ConvertTo-PBITableFromDataTable $table									
 			}						
 		}
 		
 	return $ds
 }
 
+Function ConvertTo-PBITableFromDataTable($table)
+{												
+	$pbiTable = @{ 
+		name = $table.TableName
+		; columns = $table.Columns |% {
+			$column = $_
+			
+			$columnTypeName = $column.DataType.Name
+			
+			$pbiTypeName = ConvertTo-PBIDataType $column.DataType.Name 		
+											
+			return @{ name = $column.ColumnName; dataType = $pbiTypeName  }
+		}												
+	}											
+		
+	return $pbiTable
+}
+
+Function ConvertTo-PBITable($obj, $name)
+{				
+	$pbiTable = @{name = $name; columns = @()}
+	
+	if ($obj -is [System.Data.DataTable])
+	{
+		$pbiTable = ConvertTo-PBITableFromDataTable $obj						
+	}
+	elseif($obj -is [array] -and $obj[0] -is [System.Data.DataRow])
+	{
+		$pbiTable = ConvertTo-PBITableFromDataTable $obj[0].Table
+	}
+	else
+	{
+		$sampleRow = $obj | Select -First 1							
+				
+		if ($sampleRow -is [hashtable])
+		{
+			$properties = $sampleRow.Keys | Select @{N="Name";E={$_}}
+		}			
+		elseif ($sampleRow.PSStandardMembers.DefaultDisplayPropertySet)
+		{
+			$properties = $sampleRow | Get-Member -MemberType *Property -Name $sampleRow.PSStandardMembers.DefaultDisplayPropertySet.ReferencedPropertyNames	
+		}
+		else
+		{
+			$properties = $sampleRow | Get-Member -MemberType *Property
+		}
+					
+		$properties |% {
+			
+			$value = $sampleRow.$($_.Name)
+
+            if ($value -ne $null)
+            {
+                $typeName = $value.GetType().Name
+			
+			    $pbiDataType = ConvertTo-PBIDataType $typeName
+            }
+            else
+            {
+                $typeName = "string"
+            }            
+							
+			$pbiTable.columns += @{name = $_.Name; dataType = $pbiDataType}				
+		}
+	}									
+		
+	return $pbiTable
+}
+
+Function ConvertTo-PBITableData($data)
+{			
+	# DataTable already define the columns that are to be uploaded
+	
+	if ($data -is [System.Data.DataTable])
+	{
+		return $data
+	}
+	
+	$sampleRow = $data | Select -First 1							
+			
+	if ($sampleRow -is [System.Data.DataRow])
+	{
+		return (,$sampleRow.Table)
+	}
+	elseif ($sampleRow -is [hashtable])
+	{				
+		# Hashtable already defines the properties to send to PBI
+		return $data
+	}			
+	elseif ($sampleRow.PSStandardMembers.DefaultDisplayPropertySet)
+	{
+		$properties = $sampleRow | Get-Member -MemberType *Property -Name $sampleRow.PSStandardMembers.DefaultDisplayPropertySet.ReferencedPropertyNames	
+	}
+	else
+	{
+		$properties = $sampleRow | Get-Member -MemberType *Property
+	}
+	
+	$data = $data | select @($properties | Select -ExpandProperty Name)	
+	
+	return $data				
+}
+
+Function ConvertTo-PBIDataType($typeName, $errorIfNotCompatible = $true)
+{			
+	$pbiTypeName = switch -regex ($typeName) 
+    { 
+        "Int(?:\d{2})?" {"Int64"}
+		"Double|Decimal" {"Double"}
+		"Boolean" {"bool"}
+		"Datetime" {"Datetime"}
+		"String" {"String"}
+        default {
+			if ($errorIfNotCompatible)
+			{
+				throw "Type '$typeName' not supported in PowerBI"
+			}			
+		}
+    }	
+	
+	return $pbiTypeName
+}
+
 Function Get-PowerBIRequestHeader($authToken)
 {
+	if ([string]::IsNullOrEmpty($authToken))
+	{
+		$authToken = Get-PBIAuthToken
+	}
+	
 	$headers = @{
 		'Content-Type'='application/json'
-		'Authorization'= $authToken
+		'Authorization'= "Bearer $authToken"
 		}
 	
 	return $headers
@@ -600,32 +1045,39 @@ Function Assert-DataSetObjectSchema($dataSet)
 	}
 	
 	$dataSet.tables |% {
+	
 		$table = $_
 		
-		if (-not $table.ContainsKey("name"))
-		{
-			throw "'table.name' dont exists"
-		}
+		Assert-DataSetTableObjectSchema $table
 		
-		if (-not $table.columns -is [array])
-		{
-			throw "'table.columns' object must be an array"
-		}	
-		
-		$table.columns |% {
-			$column = $_
-			
-			if (-not $column.ContainsKey("name"))
-			{
-				throw "'column.name' dont exists"
-			}
-			
-			if (-not $column.ContainsKey("dataType"))
-			{
-				throw "'column.dataType' dont exists"
-			}
-		}
 	}
+}
+
+Function Assert-DataSetTableObjectSchema($table)
+{				
+	if (-not $table.ContainsKey("name"))
+	{
+		throw "'table.name' dont exists"
+	}
+	
+	if (-not $table.columns -is [array])
+	{
+		throw "'table.columns' object must be an array"
+	}	
+	
+	$table.columns |% {
+		$column = $_
+		
+		if (-not $column.ContainsKey("name"))
+		{
+			throw "'column.name' dont exists"
+		}
+		
+		if (-not $column.ContainsKey("dataType"))
+		{
+			throw "'column.dataType' dont exists"
+		}
+	}	
 }
 
 Function Ensure-ActiveDirectoryDll
@@ -674,5 +1126,3 @@ Function Ensure-ActiveDirectoryDll
 }
 
 #endregion
-
-Export-ModuleMember -Function @("Get-PBIAuthToken", "Get-PBIDataSets", "Get-PBIDataSet", "Test-PBIDataSet", "New-PBIDataSet", "Add-PBITableRows", "Clear-PBITableRows")

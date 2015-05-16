@@ -4,7 +4,7 @@
 RootModule = 'PowerBIPS.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.0.1'
+ModuleVersion = '1.1.0.1'
 
 # ID used to uniquely identify this module
 GUID = '163A1640-A4F2-4B1F-A3AF-2796AD56200B'
@@ -58,13 +58,13 @@ Description = 'A lightweight powershell module with cmdlets to interact with Pow
 # NestedModules = @()
 
 # Functions to export from this module
-FunctionsToExport = '*'
+FunctionsToExport = @("Get-PBIAuthToken", "Get-PBIDataSet", "Test-PBIDataSet", "New-PBIDataSet", "Add-PBITableRows", "Clear-PBITableRows", "Update-PBITableSchema", "Out-PowerBI")
 
 # Cmdlets to export from this module
-CmdletsToExport = '*'
+CmdletsToExport = @()
 
 # Variables to export from this module
-VariablesToExport = '*'
+VariablesToExport = @()
 
 # Aliases to export from this module
 AliasesToExport = '*'
