@@ -6,7 +6,7 @@ $currentPath = (Split-Path $MyInvocation.MyCommand.Definition -Parent)
 
 Import-Module "$currentPath\..\PowerBIPS" -Force
 
-$testType = 4
+$testType = 2
 
 if ($testType -eq 1)
 {
@@ -20,8 +20,9 @@ elseif ($testType -eq 2)
 			; Name = "Record $_"
 			; Date = [datetime]::Now.ToString("yyyy-MM-dd")
 			; Value = (Get-Random -Minimum 10 -Maximum 1000)
+			; Xpto = (Get-Random -Minimum 10 -Maximum 1000)
 		}
-	} | Out-PowerBI -multipleTables -verbose -types @{"Table1.Date" = "datetime"; "Table2.DateModified"="datetime"} -dataSetName "TestChangeTable" -forceTableSchemaUpdate
+	} | Out-PowerBI -multipleTables -verbose -types @{"Table1.Date" = "datetime"; "Table2.DateModified"="datetime"} -dataSetName "TestChangeTable2" -forceTableSchemaUpdate
 }
 elseif ($testType -eq 3)
 {
@@ -38,6 +39,7 @@ elseif ($testType -eq 3)
 		@{
 			Id = $_
 			; Category = "Category $_"
+			; SubCategory = "SubCategory $_"
 			; DateModified = [datetime]::Now.ToString("yyyy-MM-dd HH:mm:ss")
 			; AveragePrice = (Get-Random -Minimum 10 -Maximum 1000)
 		}

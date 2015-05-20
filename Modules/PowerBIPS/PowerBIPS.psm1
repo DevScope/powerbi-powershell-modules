@@ -174,7 +174,7 @@ Function Get-PBIDataSet{
 #>
 	[CmdletBinding()]		
 	param(									
-		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$true)] [string] $authToken,
 		[Parameter(Mandatory=$false)] [string] $name,
 		[Parameter(Mandatory=$false)] [string] $id,
 		[Parameter(Mandatory=$false)] [switch] $includeDefinition,
@@ -193,6 +193,23 @@ Function Get-PBIDataSet{
 		Write-Verbose "Found $($result.datasets.count) datasets."
 		
 		$dataSets = $result.datasets
+		
+		if (-not [string]::IsNullOrEmpty($name))
+		{
+			Write-Verbose "Searching for the dataset '$name'"		
+			
+			$dataSets = @($dataSets |? name -eq $name)
+			
+			if ($dataSets.Count -ne 0)
+			{
+				Write-Verbose "Found dataset with name: '$name'"				
+			}
+			else
+			{
+				Write-Verbose "Cannot find dataset with name: '$name'"
+				return
+			}				
+		}
 		
 		# if IncludeDefinition is true then go get the definition of the dataset and change the PSObject
 		
@@ -224,7 +241,7 @@ Function Get-PBIDataSet{
 		$dataSets = @($result)		
 	}
 	
-	# if IncludeTables is true then call the GetTables API
+	# if IncludeTables is true then call the GetTables operation
 	
 	if ($includeTables)
 	{				
@@ -236,31 +253,8 @@ Function Get-PBIDataSet{
 			$dataSet | Add-Member -MemberType NoteProperty -Name "tables" -Value $tables										
 		}
 	}
-		
-	if (-not [string]::IsNullOrEmpty($name))
-	{
-		Write-Verbose "Searching for the dataset '$name'"		
-		
-		$result = $dataSets |? name -eq $name | select -First 1
-		
-		if ($result)
-		{
-			Write-Verbose "Found dataset '$name'"
-			Write-Output $result
-		}
-		else
-		{
-			Write-Verbose "Cannot find dataset '$name'"				
-		}				
-	}
-	elseif(-not [string]::IsNullOrEmpty($id))
-	{
-		Write-Output $datasets[0]
-	}
-	else
-	{
-		Write-Output $dataSets
-	}
+	
+	Write-Output $dataSets
 }
 
 Function Test-PBIDataSet{
@@ -1014,12 +1008,7 @@ Function ConvertTo-PBIDataType($typeName, $errorIfNotCompatible = $true)
 }
 
 Function Get-PowerBIRequestHeader($authToken)
-{
-	if ([string]::IsNullOrEmpty($authToken))
-	{
-		$authToken = Get-PBIAuthToken
-	}
-	
+{	
 	$headers = @{
 		'Content-Type'='application/json'
 		'Authorization'= "Bearer $authToken"
