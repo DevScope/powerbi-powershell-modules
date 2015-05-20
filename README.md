@@ -15,7 +15,7 @@ Cmdlets present in the module:
 | [Get-PBIAuthToken](#GetPBIAuthToken) |  Gets the authentication token required to communicate with the PowerBI APIs |
 | [New-PBIDataSet](#NewPBIDataSet) |    Create a new DataSet   |
 | [Add-PBITableRows](#AddPBITableRows) | Add's a collection of rows into a powerbi dataset table in batches |
-| [Get-PBIDataSet](#GetPBIDataSet) | Gets a DataSet(s) collection |
+| [Get-PBIDataSet](#GetPBIDataSet) | Gets a DataSet(s) collection, includes definition and tables |
 | [Test-PBIDataSet](#TestPBIDataSet) |  Test the existence of a DataSet by name |
 | [Clear-PBITableRows](#ClearPBITableRows) |  Delete all the rows of a PowerBI dataset table |
 | [Update-PBITableSchema](#UpdatePBITableSchema) |  Updates a table schema |
