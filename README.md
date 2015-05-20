@@ -145,6 +145,9 @@ $dataSets = Get-PBIDataSet -authToken $authToken
 # By Name
 $dataSets = Get-PBIDataSet -authToken $authToken -dataSetName "TestDataSet"
 
+# With tables and definition (retentionPolicy,...)
+$dataSets = Get-PBIDataSet -authToken $authToken -dataSetName "TestDataSet" -includeTables -includeDefinition
+
 ```
 
 ## <a name="TestPBIDataSet"></a>Test-PBIDataSet - Test the existence of a DataSet
