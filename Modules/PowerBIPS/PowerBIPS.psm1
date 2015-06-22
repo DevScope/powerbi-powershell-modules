@@ -364,13 +364,15 @@ Function New-PBIDataSet{
 	$jsonBody = ConvertTo-PBIJson -obj $dataSet -types $types
 	
 	Write-Verbose "Creating new dataset"	
-		
+	
+	$url = $pbiAPIDataSetsUrl
+	
 	if (-not [string]::IsNullOrEmpty($defaultRetentionPolicy))
-	{
-		$pbiAPIDataSetsUrl += "?defaultRetentionPolicy=$defaultRetentionPolicy"
+	{		
+		$url = $url + "?defaultRetentionPolicy=$defaultRetentionPolicy"
 	}
 	
-	$result = Invoke-RestMethod -Uri $pbiAPIDataSetsUrl -Headers $headers -Method Post -Body $jsonBody  					
+	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $jsonBody  					
 	
 	Write-Verbose "DataSet created with id: '$($result.id)"
 	

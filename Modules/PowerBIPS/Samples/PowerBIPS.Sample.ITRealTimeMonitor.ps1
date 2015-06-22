@@ -84,4 +84,6 @@ $counters | Get-Counter -Continuous -SampleInterval 5 |%{
 	}
 	
 	$pbiResumeData | Add-PBITableRows -authToken $authToken -dataSetId $dataSetSchema.Id -tableName "CountersResume" -batchSize 10 -Verbose	
+	
+	Write-Output "Sleeping..."
 }
