@@ -13,6 +13,7 @@ Cmdlets present in the module:
 |----------|:--------------|
 | [Out-PowerBI](#OutPowerBI) |  The most easy way for you to send data into PowerBI |
 | [Get-PBIAuthToken](#GetPBIAuthToken) |  Gets the authentication token required to communicate with the PowerBI APIs |
+| [Get-PBIGroup](#GetPBIGroup) |  Gets the PowerBI groups in the user workspace |
 | [New-PBIDataSet](#NewPBIDataSet) |    Create a new DataSet   |
 | [Add-PBITableRows](#AddPBITableRows) | Add's a collection of rows into a powerbi dataset table in batches |
 | [Get-PBIDataSet](#GetPBIDataSet) | Gets a DataSet(s) collection, includes definition and tables |
@@ -132,6 +133,20 @@ $authToken = Get-PBIAuthToken
 
 # To use username+password authentication you need to create an Azure AD Application and get it's id
 $authTokenWithUsername = Get-PBIAuthToken -clientId "4c3c58d6-8c83-48c2-a604-67c1b740d167" -userName "<username>" -password "<password>"
+
+```
+
+## <a name="GetPBIGroup"></a>Get-PBIGroup - Get's the PowerBI groups in the user workspace
+
+```powershell
+
+$authToken = Get-PBIAuthToken
+
+$group = Get-PBIGroup -authToken $authToken -name "SalesGroup"
+
+# Gets the datasets of the group
+
+$dataSetsOfGroup = Get-PBIDataSet -authToken $authToken -groupId $group.id
 
 ```
 
