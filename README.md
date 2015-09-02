@@ -150,6 +150,10 @@ Set-PBIGroup -id $group.id
 
 $dataSetsOfGroup = Get-PBIDataSet -authToken $authToken
 
+# Clear the group and all the requests now are for the default workspace
+
+Set-PBIGroup -clear
+
 ```
 
 ## <a name="GetPBIDataSet"></a>Get-PBIDataSet - Get a DataSet or a List of DataSets
