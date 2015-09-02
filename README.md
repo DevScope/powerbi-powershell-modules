@@ -146,7 +146,9 @@ $group = Get-PBIGroup -authToken $authToken -name "SalesGroup"
 
 # Gets the datasets of the group
 
-$dataSetsOfGroup = Get-PBIDataSet -authToken $authToken -groupId $group.id
+Set-PBIGroup -id $group.id
+
+$dataSetsOfGroup = Get-PBIDataSet -authToken $authToken
 
 ```
 
