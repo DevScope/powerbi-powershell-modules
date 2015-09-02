@@ -37,9 +37,7 @@ $pbiResourceUrl = "https://analysis.windows.net/powerbi/api"
 $pbiDefaultAuthRedirectUri = "https://login.live.com/oauth20_desktop.srf"
 $pbiDefaultClientId = "d57ac8af-1019-431d-8fed-5fd8db180388"
 
-$pbiAPIUrl = "https://api.powerbi.com/v1.0/myorg"
-$pbiAPIDataSetsUrl = "$pbiAPIUrl/datasets"
-$pbiAPIGroupsUrl = "$pbiAPIUrl/groups"
+$script:pbiGroupId = $null
 
 #endregion
 
@@ -140,6 +138,43 @@ Function Get-PBIAuthToken{
 	}
 }
 
+Function Set-PBIGroup{
+<#
+.SYNOPSIS
+   Set's the scope to the group specified, after execution all the following PowerBIPS cmdlets will execute over the setted group.		
+
+.PARAMETER AuthToken
+    The authorization token required to communicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+
+.PARAMETER Id
+    The id of the group
+	
+.PARAMETER Name
+    The name of the group
+
+.PARAMETER Clear
+    If $true then will clear the group and all the requests will be made to the default user workspace
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $id,
+		[Parameter(Mandatory=$false)] [string] $name,
+		[Parameter(Mandatory=$false)] [switch] $clear = $false			
+	)
+		
+	if ($clear)
+	{
+		$script:pbiGroupId = $null
+	}
+	else
+	{
+		$script:pbiGroupId = Resolve-GroupId $authToken $id $name
+	}
+}
+
 Function Get-PBIGroup{
 <#
 .SYNOPSIS    
@@ -152,16 +187,18 @@ Function Get-PBIGroup{
 #>
 	[CmdletBinding()]		
 	param(									
-		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$false)] [string] $name,
 		[Parameter(Mandatory=$false)] [string] $id		
 	)
 	
-	$headers = (Get-PowerBIRequestHeader $authToken)
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
 
 	Write-Verbose "Getting Groups"
 	
-	$result = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "groups" -authToken $authToken) -Headers $headers -Method Get 
+	$result = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "groups" -ignoreGroup) -Headers $headers -Method Get 
 	
 	$groups = $result.value
 	
@@ -223,22 +260,22 @@ Function Get-PBIDataSet{
 #>
 	[CmdletBinding()]		
 	param(									
-		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$false)] [string] $name,
 		[Parameter(Mandatory=$false)] [string] $id,
 		[Parameter(Mandatory=$false)] [switch] $includeDefinition,
-		[Parameter(Mandatory=$false)] [switch] $includeTables,
-		[Parameter(Mandatory=$false)] [string] $groupId,
-		[Parameter(Mandatory=$false)] [string] $groupName
+		[Parameter(Mandatory=$false)] [switch] $includeTables		
 	)
 	
-	$headers = (Get-PowerBIRequestHeader $authToken)
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+		
+	$url = Get-PowerBIRequestUrl -scope "datasets"
 	
 	if ([string]::IsNullOrEmpty($id))
 	{
-		Write-Verbose "Getting DataSets"
-		
-		$url = (Get-PowerBIRequestUrl -authToken $authToken -scope "datasets" -groupId $groupId -groupName $groupName)
+		Write-Verbose "Getting DataSets"				
 		
 		$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Get 
 		
@@ -250,7 +287,7 @@ Function Get-PBIDataSet{
 		{
 			Write-Verbose "Searching for the dataset '$name'"		
 			
-			$dataSets = @($dataSets |? name -eq $name)
+			$dataSets = @($dataSets |? name -eq $name | Select -First 1)
 			
 			if ($dataSets.Count -ne 0)
 			{
@@ -286,7 +323,7 @@ Function Get-PBIDataSet{
 	{
 		Write-Verbose "Getting DataSet Definition"
 		
-		$result = Invoke-RestMethod -Uri "$pbiAPIDataSetsUrl/$id" -Headers $headers -Method Get 
+		$result = Invoke-RestMethod -Uri "$url/$id" -Headers $headers -Method Get 
 		
 		$result | Add-Member -MemberType NoteProperty -Name "id" -Value $id
 		
@@ -300,7 +337,7 @@ Function Get-PBIDataSet{
 		$dataSets |% {
 			$dataSet = $_						
 			
-			$tables = Get-PBIDataSetTables -authToken $authToken -id $_.Id
+			$tables = Get-PBIDataSetTables -authToken $authToken -id $_.Id -url $url
 					
 			$dataSet | Add-Member -MemberType NoteProperty -Name "tables" -Value $tables			
 		}
@@ -334,12 +371,10 @@ Function Test-PBIDataSet{
 	[OutputType([bool])]
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
-		[Parameter(Mandatory=$true)] $name,
-		[Parameter(Mandatory=$false)] [string] $groupId,
-		[Parameter(Mandatory=$false)] [string] $groupName
+		[Parameter(Mandatory=$true)] $name
 	)
 			
-	$dataSet = Get-PBIDataSet -authToken $authToken -name $name -groupId $groupId -groupName $groupName
+	$dataSet = Get-PBIDataSet -authToken $authToken -name $name
 	
 	if ($dataSet)
 	{				
@@ -394,15 +429,15 @@ Function New-PBIDataSet{
 #>
 	[CmdletBinding()]	
 	param(									
-		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$true, HelpMessage = "Must be of type [hashtable] or [dataset]")] $dataSet,
 		[Parameter(Mandatory=$false)] [string]$defaultRetentionPolicy,
-		[Parameter(Mandatory=$false)] [hashtable]$types,
-		[Parameter(Mandatory=$false)] [string] $groupId,
-		[Parameter(Mandatory=$false)] [string] $groupName
+		[Parameter(Mandatory=$false)] [hashtable]$types
 	)
 		
-	$headers = (Get-PowerBIRequestHeader $authToken)
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
 	
 	if ($dataSet -is [hashtable])
 	{
@@ -421,7 +456,7 @@ Function New-PBIDataSet{
 	
 	Write-Verbose "Creating new dataset"	
 	
-	$url = (Get-PowerBIRequestUrl -authToken $authToken -scope "datasets" -groupId $groupId -groupName $groupName)
+	$url = Get-PowerBIRequestUrl -scope "datasets"
 	
 	if (-not [string]::IsNullOrEmpty($defaultRetentionPolicy))
 	{		
@@ -468,15 +503,15 @@ Function Update-PBITableSchema{
 #>
 	[CmdletBinding()]	
 	param(									
-		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$true)] [string] $dataSetId,				
 		[Parameter(Mandatory=$true, HelpMessage = "Must be of type [hashtable] or [datatable]")] $table,
-		[Parameter(Mandatory=$false)] [hashtable] $types,
-		[Parameter(Mandatory=$false)] [string] $groupId,
-		[Parameter(Mandatory=$false)] [string] $groupName
+		[Parameter(Mandatory=$false)] [hashtable] $types
 	)
 						
-	$headers = (Get-PowerBIRequestHeader $authToken)
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
 	
 	if ($table -is [hashtable])
 	{
@@ -495,7 +530,7 @@ Function Update-PBITableSchema{
 		
 	Write-Verbose "Updating Table Schema of '$($table.Name)' on DataSet '$dataSetId'"	
 	
-	$url = (Get-PowerBIRequestUrl -authToken $authToken -scope "datasets/$dataSetId/tables/$($table.Name)" -groupId $groupId -groupName $groupName)
+	$url = Get-PowerBIRequestUrl -scope "datasets/$dataSetId/tables/$($table.Name)"
 	
 	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method PUT -Body $jsonBody  					
 	
@@ -545,19 +580,19 @@ Function Add-PBITableRows{
 	[CmdletBinding()]
 	[CmdletBinding(DefaultParameterSetName = "dataSetId")]	
 	param(											
-		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$true, ParameterSetName = "dataSetId")] [string] $dataSetId,
 		[Parameter(Mandatory=$true, ParameterSetName = "dataSetName")] [string] $dataSetName,
 		[Parameter(Mandatory=$true)] [string] $tableName,
 		[Parameter(Mandatory=$true, ValueFromPipeline = $true)] $rows,
-		[Parameter(Mandatory=$false)] [int] $batchSize = 1000,
-		[Parameter(Mandatory=$false)] [string] $groupId,
-		[Parameter(Mandatory=$false)] [string] $groupName
+		[Parameter(Mandatory=$false)] [int] $batchSize = 1000		
 	)
 	
 	begin{
 		
-		$headers = (Get-PowerBIRequestHeader $authToken)					
+		$authToken = Resolve-PowerBIAuthToken $authToken
+
+		$headers = Get-PowerBIRequestHeader $authToken					
 	
 		$rowsBatch = @()	
 		
@@ -573,7 +608,7 @@ Function Add-PBITableRows{
 			$dataSetId = $dataSet.Id
 		}
 		
-		$url = (Get-PowerBIRequestUrl -authToken $authToken -scope "datasets/$dataSetId/tables/$tableName/rows" -groupId $groupId -groupName $groupName)			
+		$url = Get-PowerBIRequestUrl -scope "datasets/$dataSetId/tables/$tableName/rows"			
 	}
 	process{
 		
@@ -669,19 +704,19 @@ Function Clear-PBITableRows{
 	[CmdletBinding()]
 	[CmdletBinding(DefaultParameterSetName = "dataSetId")]	
 	param(									
-		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$true, ParameterSetName = "dataSetId")] [string] $dataSetId,
 		[Parameter(Mandatory=$true, ParameterSetName = "dataSetName")] [string] $dataSetName,
-		[Parameter(Mandatory=$true)] [string] $tableName,
-		[Parameter(Mandatory=$false)] [string] $groupId,
-		[Parameter(Mandatory=$false)] [string] $groupName
+		[Parameter(Mandatory=$true)] [string] $tableName		
 	)
 	
-	$headers = (Get-PowerBIRequestHeader $authToken)
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
 	
 	if ($PsCmdlet.ParameterSetName -eq "dataSetName")
 	{
-		$dataSet = Get-PBIDataSet -authToken $authToken -name $dataSetName -groupId $groupId -groupName $groupName
+		$dataSet = Get-PBIDataSet -authToken $authToken -name $dataSetName
 		
 		if (-not $dataSet)
 		{
@@ -691,7 +726,7 @@ Function Clear-PBITableRows{
 		$dataSetId = $dataSet.Id
 	}
 	
-	$url = (Get-PowerBIRequestUrl -authToken $authToken -scope "datasets/$dataSetId/tables/$tableName/rows" -groupId $groupId -groupName $groupName)	
+	$url = Get-PowerBIRequestUrl -scope "datasets/$dataSetId/tables/$tableName/rows"
 			
 	Write-Verbose "Deleting all the rows of '$tableName' table of dataset '$dataSetId'"
 	
@@ -699,7 +734,8 @@ Function Clear-PBITableRows{
 	
 }
 
-<#
+Function Out-PowerBI{
+	<#
 .SYNOPSIS
     A one line cmdlet that you can use to send data into PowerBI
 
@@ -750,7 +786,6 @@ Function Clear-PBITableRows{
 		} | Out-PowerBI -clientId "7a7be4f7-c64d-41da-94db-7fb8200f029c"  -verbose
 
 #>
-Function Out-PowerBI{
 	[CmdletBinding(DefaultParameterSetName = "authToken")]		
 	param(						
 		[Parameter(ValueFromPipeline=$true)] $data,
@@ -765,9 +800,7 @@ Function Out-PowerBI{
 		[Parameter(Mandatory=$false)] [switch] $multipleTables,
 		[Parameter(Mandatory=$false)] [switch] $forceAskCredentials,
 		[Parameter(Mandatory=$false)] [switch] $forceTableSchemaUpdate,
-		[Parameter(Mandatory=$false)] [hashtable]$types,
-		[Parameter(Mandatory=$false)] [string] $groupId,
-		[Parameter(Mandatory=$false)] [string] $groupName
+		[Parameter(Mandatory=$false)] [hashtable]$types		
 	)
 	
 	begin {
@@ -831,15 +864,11 @@ Function Out-PowerBI{
 
         $tablesToRemove |% {
 	        $dataToProcess.Remove($_)
-        }        
-		
-		#resolve the GroupId (for performance)
-		
-		$groupId = Resolve-GroupId $groupId $groupName	
+        }        				
 
 		# Create the DataSet in PowerBI (if not exists)
 		
-		$pbiDataSet = Get-PBIDataSet -authToken $authToken -name $dataSetName -groupId $groupId
+		$pbiDataSet = Get-PBIDataSet -authToken $authToken -name $dataSetName
 		
 		if ($pbiDataSet -eq $null -or $forceTableSchemaUpdate)
 		{		
@@ -859,13 +888,13 @@ Function Out-PowerBI{
 			
 			if ($pbiDataSet -eq $null)
 			{
-				$pbiDataSet = New-PBIDataSet -authToken $authToken -dataSet $dataSet -types $types -groupId $groupId
+				$pbiDataSet = New-PBIDataSet -authToken $authToken -dataSet $dataSet -types $types
 			}
 			else
 			{
 				# Updates the schema of all the tables
 				$dataSet.tables |% {
-					Update-PBITableSchema -authToken $authToken -dataSetId $pbiDataSet.id -table $_ -types $types -groupId $groupId
+					Update-PBITableSchema -authToken $authToken -dataSetId $pbiDataSet.id -table $_ -types $types
 				}
 			}						
 		}
@@ -878,25 +907,176 @@ Function Out-PowerBI{
 			
 			$tableData = ConvertTo-PBITableData $h.Value
 									
-			$tableData | Add-PBITableRows -authToken $authToken -dataSetId $pbiDataSet.Id -tableName $tableName -batchSize $batchSize -groupId $groupId
+			$tableData | Add-PBITableRows -authToken $authToken -dataSetId $pbiDataSet.Id -tableName $tableName -batchSize $batchSize
 		}				
 	}				
 }
 
+Function Get-PBIImports{
+<#
+.SYNOPSIS    
+	Gets all the PowerBI imports made by the user and returns as an array of custom objects.
+		
+.EXAMPLE
+			
+		Get-PBIImports -authToken $authToken		
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $importId			
+	)
+	
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+	Write-Verbose "Getting Imports"
+	
+	$scope = "imports"
+	
+	if (-not [string]::IsNullOrEmpty($importId))
+	{
+		$scope = "imports/$importId"
+	}
+	
+	$url = Get-PowerBIRequestUrl -scope $scope -beta
+	
+	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Get 	
+	
+	if ($result -and ($result.value))
+	{				
+		Write-Output $result.value		
+	}
+	else
+	{
+		Write-Output $result
+	}
+}
+
+
+Function Import-PBIFile{
+	[CmdletBinding()]		
+	param(		
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $dataSetName,
+		[Parameter(Mandatory=$false)]
+		[ValidateSet("Abort","Overwrite","Ignore")]
+		[string]$nameConflict = "Ignore",
+		[Parameter(Mandatory=$true)] [string]$filePath		
+	)
+	
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+	
+	$fileName = [IO.Path]::GetFileName($filePath)
+	
+	if ([string]::IsNullOrEmpty($dataSetName))
+	{
+		$dataSetName = $fileName
+	}
+			
+	$url = Get-PowerBIRequestUrl -scope "imports?datasetDisplayName=$dataSetName&nameConflict=$nameConflict" -beta
+	
+	$boundary = [System.Guid]::NewGuid().ToString("N")   
+		
+	$fileBin = [IO.File]::ReadAllBytes($filePath)
+	
+    $computer= $env:COMPUTERNAME    
+    
+	$enc = [System.Text.Encoding]::GetEncoding("iso-8859-1")
+	
+	$fileEnc = $enc.GetString($fileBin)	
+	
+    $LF = [System.Environment]::NewLine
+	
+	$bodyLines = (
+	    "--$boundary",
+	    "Content-Disposition: form-data; name=`"file0`"; filename=`"$fileName`"",
+		"Content-Type: application/x-zip-compressed$LF",		
+	    $fileEnc,
+	    "--$boundary--$LF"
+	    ) -join $LF
+		
+	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -ContentType "multipart/form-data; boundary=--$boundary" -Body $bodyLines
+	
+	Write-Output $result
+}
+
+#Function Get-PBIModels{
+#	[CmdletBinding()]		
+#	param(									
+#		[Parameter(Mandatory=$true)] [string] $authToken					
+#	)
+#		
+#	$headers = (Get-PowerBIRequestHeader $authToken)
+#
+#	Write-Verbose "Getting Models"
+#	
+#	#$url = Get-PowerBIRequestUrl -scope "/powerbi/metadata/models" -authToken $authToken
+#	
+#	$result = Invoke-RestMethod -Uri "https://wabi-us-north-central-redirect.analysis.windows.net/powerbi/metadata/models" -Headers $headers -Method Get 	
+#	
+#	if ($result -and ($result.value))
+#	{				
+#		Write-Output $result.value		
+#	}
+#	else
+#	{
+#		Write-Output $result
+#	}
+#}
+
 #region Private Methods
+
+Function Get-PowerBIRequestUrl{	
+	[CmdletBinding()]	
+	param(													
+		[Parameter(Mandatory=$true)] [string] $scope,		
+		[Parameter(Mandatory=$false)] [switch] $beta = $false,	
+		[Parameter(Mandatory=$false)] [switch] $ignoreGroup = $false	
+	)
+			
+	$pbiAPIUrl = "https://api.powerbi.com/v1.0/myorg"			
+	
+	if ($beta)
+	{
+		$pbiAPIUrl = "https://api.powerbi.com/beta/myorg"
+	}		
+		
+	$groupId = $script:pbiGroupId
+
+	if ($ignoreGroup)
+	{
+		$groupId = $null
+	}
+
+	if ([string]::IsNullOrEmpty($groupId))
+	{
+		return "$pbiAPIUrl/$scope"
+	}
+	else
+	{
+		return "$pbiAPIUrl/groups/$groupId/$scope"
+	}
+	
+}
 
 Function Get-PBIDataSetTables{
 	[CmdletBinding()]		
 	param(									
 		[Parameter(Mandatory=$true)] [string] $authToken,
-		[Parameter(Mandatory=$true)] [string] $id		
+		[Parameter(Mandatory=$true)] [string] $id,
+		[Parameter(Mandatory=$true)] [string] $url
 	)
 			
 	Write-Verbose "Getting DataSet '$id' Tables"
 		
 	try
-	{
-		$result = Invoke-RestMethod -Uri "$pbiAPIDataSetsUrl/$id/tables" -Headers $headers -Method Get
+	{	
+		$result = Invoke-RestMethod -Uri "$url/$id/tables" -Headers $headers -Method Get
 		
 		Write-Output $result.value	
 	}
@@ -1088,8 +1268,18 @@ Function ConvertTo-PBIDataType($typeName, $errorIfNotCompatible = $true)
 	return $pbiTypeName
 }
 
+Function Resolve-PowerBIAuthToken($authToken)
+{
+	if ([string]::IsNullOrEmpty($authToken))
+	{
+		$authToken = Get-PBIAuthToken
+	}
+
+	$authToken
+}
+
 Function Get-PowerBIRequestHeader($authToken)
-{	
+{		
 	$headers = @{
 		'Content-Type'='application/json'
 		'Authorization'= "Bearer $authToken"
@@ -1195,7 +1385,7 @@ Function Ensure-ActiveDirectoryDll
 	}
 }
 
-Function Resolve-GroupId($groupId, $groupName)
+Function Resolve-GroupId($authToken, $groupId, $groupName)
 {		
 	if (-not [string]::IsNullOrEmpty($groupName))
 	{
@@ -1205,28 +1395,6 @@ Function Resolve-GroupId($groupId, $groupName)
 	return $groupId
 }
 
-Function Get-PowerBIRequestUrl{	
-	[CmdletBinding()]	
-	param(											
-		[Parameter(Mandatory=$true)] [string] $authToken,
-		[Parameter(Mandatory=$true)] [string] $scope,
-		[Parameter(Mandatory=$false)] [string] $groupId,
-		[Parameter(Mandatory=$false)] [string] $groupName
-	)
-	
-	# If groupName defined then need to resolve the groupId
-	
-	$groupId = Resolve-GroupId $groupId $groupName	
-	
-	if ([string]::IsNullOrEmpty($groupId))
-	{
-		return "$pbiAPIUrl/$scope"
-	}
-	else
-	{
-		return "$pbiAPIUrl/groups/$groupId/$scope"
-	}
-	
-}
+
 
 #endregion

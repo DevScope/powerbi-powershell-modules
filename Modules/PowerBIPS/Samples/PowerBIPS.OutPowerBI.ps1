@@ -14,7 +14,7 @@ if ($testType -eq 1)
 }
 elseif ($testType -eq 2)
 {
-	1..50 |% {	
+	$data = 1..50 |% {	
 		@{
 			Id = $_
 			; Name = "Record $_"
@@ -22,7 +22,9 @@ elseif ($testType -eq 2)
 			; Value = (Get-Random -Minimum 10 -Maximum 1000)
 			; Xpto = (Get-Random -Minimum 10 -Maximum 1000)
 		}
-	} | Out-PowerBI -multipleTables -verbose -types @{"Table1.Date" = "datetime"; "Table2.DateModified"="datetime"} -dataSetName "TestChangeTable2" -forceTableSchemaUpdate
+	}
+	
+	$data | Out-PowerBI -verbose -types @{"Table.Date" = "datetime"; "Table.DateModified"="datetime"} -dataSetName "TestChangeTable2" -forceTableSchemaUpdate
 }
 elseif ($testType -eq 3)
 {

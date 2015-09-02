@@ -4,11 +4,11 @@ $ErrorActionPreference = "Stop"
 
 $currentPath = (Split-Path $MyInvocation.MyCommand.Definition -Parent)
 
-#Create Archive Folder 
+Import-Module "$currentPath\..\PowerBIPS" -Force
+
+# Ensure the Archive Folder 
 
 New-Item -Name "Archive" -Force -ItemType directory -Path "$currentPath\CSVData" | Out-Null
-
-Import-Module "$currentPath\..\PowerBIPS" -Force
 
 while($true)
 {
