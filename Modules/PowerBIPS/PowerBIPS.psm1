@@ -673,7 +673,7 @@ Function Add-PBITableRowsInternal{
 	
 	if ($bodyObj -match """value"":.+\/Date\(")
 	{
-		Write-Warning "There's an issue with [datetime] and ConvertTo-Json... As an workaround please use -Types parameter to force the column type as [datetime] for example: -Types @{""Table.Date""=""datetime""} and set the row values as string like '$_.ToString(""yyyy-MM-dd"")'"
+		Write-Warning "There's an issue with [datetime] and ConvertTo-Json... As an workaround please use -Types parameter to force the column type as [datetime] for example: -Types @{""Table.Date""=""datetime""} and set the row values as string like 'colValue.ToString(""yyyy-MM-dd"")'"
 	}
 	
 	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $bodyObj

@@ -30,9 +30,11 @@
     <Folder Include="Samples\" />
     <Folder Include="Samples\CSVData\" />
     <Folder Include="Samples\CSVData\Archive\" />
+    <Folder Include="Samples\Modules\" />
     <Folder Include="Samples\PBIX\" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Samples\Modules\InvokeTwitterAPIs.psm1" />
     <Compile Include="PowerBIPS.psd1" />
     <Compile Include="PowerBIPS.psm1" />
     <Compile Include="Samples\CSVData\Sales.201501.csv" />
@@ -41,6 +43,7 @@
     <Compile Include="Samples\CSVData\Sales.201504.csv" />
     <Compile Include="Samples\CSVData\Sales.201505.csv" />
     <Compile Include="Samples\CSVData\Sales.201506.csv" />
+    <Compile Include="Samples\PowerBIPS.TwitterRealTime.ps1" />
     <Compile Include="Samples\PBIX\MyMovies.pbix" />
     <Compile Include="Samples\PowerBIPS.OutPowerBI.ps1" />
     <Compile Include="Samples\PowerBIPS.Sample.CSVUpload.ps1" />
