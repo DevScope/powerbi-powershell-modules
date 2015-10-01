@@ -90,7 +90,8 @@ Function Get-PBIAuthToken{
 		
 		# The begin & end are needed to avoid the .net type error when the dll was not loaded
 		
-		Ensure-ActiveDirectoryDll
+		#Ensure-ActiveDirectoryDll
+		#Dll is included in the module and loaded via the manifest file
 	}
 	end{
 	
@@ -191,7 +192,7 @@ Function Get-PBIGroup{
 		[Parameter(Mandatory=$false)] [string] $name,
 		[Parameter(Mandatory=$false)] [string] $id		
 	)
-	
+
 	$authToken = Resolve-PowerBIAuthToken $authToken
 
 	$headers = Get-PowerBIRequestHeader $authToken
@@ -266,9 +267,8 @@ Function Get-PBIDataSet{
 		[Parameter(Mandatory=$false)] [switch] $includeDefinition,
 		[Parameter(Mandatory=$false)] [switch] $includeTables		
 	)
-	
-	$authToken = Resolve-PowerBIAuthToken $authToken
 
+	$authToken = Resolve-PowerBIAuthToken $authToken
 	$headers = Get-PowerBIRequestHeader $authToken
 		
 	$url = Get-PowerBIRequestUrl -scope "datasets"
@@ -429,7 +429,7 @@ Function New-PBIDataSet{
 #>
 	[CmdletBinding()]	
 	param(									
-		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$true)] [string] $authToken,
 		[Parameter(Mandatory=$true, HelpMessage = "Must be of type [hashtable] or [dataset]")] $dataSet,
 		[Parameter(Mandatory=$false)] [string]$defaultRetentionPolicy,
 		[Parameter(Mandatory=$false)] [hashtable]$types
@@ -1267,6 +1267,7 @@ Function ConvertTo-PBIDataType($typeName, $errorIfNotCompatible = $true)
 	
 	return $pbiTypeName
 }
+
 
 Function Resolve-PowerBIAuthToken($authToken)
 {
