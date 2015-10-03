@@ -16,11 +16,12 @@ Cmdlets present in the module:
 | [Get-PBIGroup](#GetPBIGroup) |  Gets the PowerBI groups in the user workspace |
 | [New-PBIDataSet](#NewPBIDataSet) |    Create a new DataSet   |
 | [Add-PBITableRows](#AddPBITableRows) | Add's a collection of rows into a powerbi dataset table in batches |
-| [Get-PBIDataSet](#GetPBIDataSet) | Gets a DataSet(s) collection, includes definition and tables |
+| [Get-PBIDataSet](#GetPBIDataSet) | Gets a DataSet collection, includes definition and tables |
 | [Test-PBIDataSet](#TestPBIDataSet) |  Test the existence of a DataSet by name |
 | [Clear-PBITableRows](#ClearPBITableRows) |  Delete all the rows of a PowerBI dataset table |
 | [Update-PBITableSchema](#UpdatePBITableSchema) |  Updates a table schema |
-
+| [Get-PBIDashboard](#GetPBIDashboard) | Gets a Dashboard collection
+| [Get-PBIDashboardTile](#GetPBIDashboardTile) | Gets a Tile collection from a dashboard
 
 For a better experience please copy this module on your UserProfile directory:
 * %USERPROFILE%\Documents\WindowsPowershell\Modules\PowerBIPS
@@ -248,5 +249,21 @@ $tableSchema =  @{
 }
 
 Update-PBITableSchema -authToken $authToken -dataSetId "<dataSetId>" -table $tableSchema -verbose
+
+```
+
+## <a name="GetPBIDashboard"></a>Get-PBIDashboard - Gets a Dashboard collection
+
+```powershell
+
+$dashboards = Get-PBIDashboard 
+
+```
+
+## <a name="GetPBIDashboardTile"></a>Get-PBIDashboardTile - Gets a Tile collection
+
+```powershell
+
+$tiles = Get-PBIDashboardTile -dashboardId "XXX-XXX-XXX" 
 
 ```
