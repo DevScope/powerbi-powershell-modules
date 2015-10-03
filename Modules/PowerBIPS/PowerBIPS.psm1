@@ -175,6 +175,100 @@ Function Set-PBIGroup{
 	}
 }
 
+Function Get-PBIDashboard{
+<#
+.SYNOPSIS    
+	Gets all the PowerBI existing dashboards and returns as an array of custom objects.
+		
+.EXAMPLE
+			
+		Get-PBIDashboard -authToken $authToken		
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $name,
+		[Parameter(Mandatory=$false)] [string] $id		
+	)
+	
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+	Write-Verbose "Getting Dashboards"
+	
+	$result = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "dashboards" -beta) -Headers $headers -Method Get 
+	
+	$dashboards = $result.value
+	
+	Write-Verbose "Found $($dashboards.count) groups."			
+	
+	if (-not [string]::IsNullOrEmpty($name))
+	{
+		Write-Verbose "Searching for the dashboard '$name'"		
+		
+		$dashboards = @($dashboards |? name -eq $name)
+		
+		if ($dashboards.Count -ne 0)
+		{
+			Write-Verbose "Found dashboard with name: '$name'"				
+		}
+		else
+		{
+			throw "Cannot find dashboard with name: '$name'"			
+		}				
+	}	
+
+	Write-Output $dashboards
+}
+
+Function Get-PBIDashboardTile{
+<#
+.SYNOPSIS    
+	Gets all the PowerBI existing dashboards and returns as an array of custom objects.
+		
+.EXAMPLE
+			
+		Get-PBIDashboardTile -authToken $authToken -dashboardId "XXXX-XXXX-XXXX"		
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $dashboardId,	
+		[Parameter(Mandatory=$false)] [string] $tileId
+	)
+	
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+	Write-Verbose "Getting Dashboard '$dashboardId' tiles"
+	
+	$scope = "dashboards/$dashboardId/tiles"
+
+	if (-not [string]::IsNullOrEmpty($tileId))
+	{
+		$scope += "/$tileId"
+	}
+
+	$result = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope $scope -beta) -Headers $headers -Method Get 
+	
+	if ($result.value)
+	{
+		$tiles = $result.value
+	}
+	else
+	{
+		$tiles = @($result)
+	}	
+	
+	Write-Verbose "Found $($tiles.count) tiles."				
+
+	Write-Output $tiles
+}
+
 Function Get-PBIGroup{
 <#
 .SYNOPSIS    
