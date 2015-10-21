@@ -78,13 +78,24 @@ Function Get-PBIAuthToken{
 #>
 	[CmdletBinding(DefaultParameterSetName = "default")]	
 	[OutputType([string])]
-	param(				
-			[Parameter(Mandatory=$false)] [string] $clientId = $pbiDefaultClientId,
-			[Parameter(Mandatory=$true, ParameterSetName = "username")] [string] $userName,
-			[Parameter(Mandatory=$true, ParameterSetName = "username")] [string] $password,	
-			[Parameter(Mandatory=$false, ParameterSetName = "default")] [string] $redirectUri,
-			[Parameter(Mandatory=$false, ParameterSetName = "default")] [switch] $forceAskCredentials = $false			
-		)
+	param
+	(				
+		[Parameter(Mandatory=$false)]
+		[string]
+		$clientId = $pbiDefaultClientId,
+
+		[Parameter(Mandatory=$true, ParameterSetName = "credential")]
+		[System.Management.Automation.CredentialAttribute()]
+		$Credential,
+
+		[Parameter(Mandatory=$false, ParameterSetName = "default")]
+		[string]
+		$redirectUri,
+
+		[Parameter(Mandatory=$false, ParameterSetName = "default")]
+		[switch]
+		$forceAskCredentials = $false			
+	)
 
 	begin{
 		
@@ -106,7 +117,7 @@ Function Get-PBIAuthToken{
 		{
 			Write-Verbose "Using username+password authentication flow"	
 			
-			$userCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.UserCredential($userName, $password)
+			$userCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.UserCredential($Credential.UserName, $Credential.GetNetworkCredential().Password)
 			
 			$authResult = $script:authContext.AcquireToken($pbiResourceUrl,$clientId, $userCredential)
 		}
