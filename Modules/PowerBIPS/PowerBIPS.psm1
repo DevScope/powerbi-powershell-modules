@@ -41,112 +41,96 @@ $script:pbiGroupId = $null
 
 #endregion
 
-Function Get-PBIAuthToken{  
-<#
-.SYNOPSIS
-    Gets the authentication token required to comunicate with the PowerBI API's
+Function Get-PBIAuthToken
+{
+    <#
+            .SYNOPSIS
+            Gets the authentication token required to comunicate with the PowerBI API's
 
-.DESCRIPTION	
-	To authenticate with PowerBI uses OAuth 2.0 with the Azure AD Authentication Library (ADAL)
-	
-	If a username and password is not supplied a popup will appear for the user to authenticate.
-	
-	It will automatically download and install the required nuget: "Microsoft.IdentityModel.Clients.ActiveDirectory".		
+            .DESCRIPTION
+            To authenticate with PowerBI uses OAuth 2.0 with the Azure AD Authentication Library (ADAL)
 
-.PARAMETER ClientId
-    The Client Id of the Azure AD application
+            If a credential is not supplied a popup will appear for the user to authenticate.
 
-.PARAMETER UserName
-    The username used to authenticate with PowerBI
-	
-.PARAMETER Password
-    The password used to authenticate with PowerBI
+            It will automatically download and install the required nuget: "Microsoft.IdentityModel.Clients.ActiveDirectory".
 
-.PARAMETER RedirectUri
-    The redirect URI associated with the native client application
+            .PARAMETER ClientId
+            The Client Id of the Azure AD application
 
-.PARAMETER ForceAskCredentials
-    Forces the authentication popup to always ask for the username and password
+            .PARAMETER Credential
+			Specifies a PSCredential object or a string username used to authenticate to PowerBI. If only a username is specified 
+			this will prompt for the password. Note that this will not work with federated users.
 
- .EXAMPLE
-        Get-PBIAuthToken -clientId "C0E8435C-614D-49BF-A758-3EF858F8901B"
-        Gets the authentication token but only after the user authenticates with PowerBI in the popup 
- .EXAMPLE
-        Get-PBIAuthToken -clientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -username "user@pbitenant.onmicrosoft.com" -password "youwish"
-        Gets the authentication token after authenticate with PowerShell with the supplied username and password
+            .PARAMETER RedirectUri
+            The redirect URI associated with the native client application
 
-#>
-	[CmdletBinding(DefaultParameterSetName = "default")]	
-	[OutputType([string])]
-	param
-	(				
-		[Parameter(Mandatory=$false)]
-		[string]
-		$clientId = $pbiDefaultClientId,
+            .PARAMETER ForceAskCredentials
+            Forces the authentication popup to always ask for the username and password
 
-		[Parameter(Mandatory=$true, ParameterSetName = "credential")]
-		[System.Management.Automation.CredentialAttribute()]
-		$Credential,
+            .EXAMPLE
+            Get-PBIAuthToken -clientId "C0E8435C-614D-49BF-A758-3EF858F8901B"
+            Returns the access token for the PowerBI REST API using the client ID. You'll be presented with a pop-up window for 
+			user authentication.
+            .EXAMPLE
+			$Credential = Get-Credential
+            Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -Credential $Credential
+            Returns the access token for the PowerBI REST API using the client ID and a PSCredential object.
+    #>
+    
+    [CmdletBinding(DefaultParameterSetName = 'default')]
+    [OutputType([string])]
+    param
+    (
+        [Parameter(ParameterSetName = 'default')]
+        [Parameter(ParameterSetName = 'credential')]
+        [string]
+        $ClientId = $pbiDefaultClientId,
 
-		[Parameter(Mandatory=$false, ParameterSetName = "default")]
-		[string]
-		$redirectUri,
+        [Parameter(Mandatory = $true, ParameterSetName = 'credential')]
+        [System.Management.Automation.CredentialAttribute()]
+        $Credential,
 
-		[Parameter(Mandatory=$false, ParameterSetName = "default")]
-		[switch]
-		$forceAskCredentials = $false			
-	)
+        [Parameter(ParameterSetName = 'default')]
+        [string]
+        $RedirectUri = $PBIDefaultAuthRedirectUri,
 
-	begin{
-		
-		# The begin & end are needed to avoid the .net type error when the dll was not loaded
-		
-		Ensure-ActiveDirectoryDll
-	}
-	end{
-	
-		if ($script:authContext -eq $null)
-		{
-			Write-Verbose "Creating new AuthenticationContext object"			
-			$script:authContext = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext($pbiAuthorityUrl)
-		}				
-		
-		Write-Verbose "Getting the Authentication Token"						
-			
-		if ($PsCmdlet.ParameterSetName -eq "username")
-		{
-			Write-Verbose "Using username+password authentication flow"	
-			
-			$userCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.UserCredential($Credential.UserName, $Credential.GetNetworkCredential().Password)
-			
-			$authResult = $script:authContext.AcquireToken($pbiResourceUrl,$clientId, $userCredential)
-		}
-		else
-		{
-			Write-Verbose "Using default authentication flow"	
-			
-			if ([string]::IsNullOrEmpty($redirectUri))
-			{
-				$redirectUri = $pbiDefaultAuthRedirectUri
-			}
-			
-			$promptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Auto
-			
-			if ($forceAskCredentials)
-			{
-				$promptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Always
-			}
-			
-			$authResult = $script:authContext.AcquireToken($pbiResourceUrl,$clientId, [Uri]$redirectUri, $promptBehavior)			
-		}		
+        [Parameter(ParameterSetName = 'default')]
+        [switch]
+        $ForceAskCredentials = $false
+    )
 
-		Write-Verbose "Authenticated as $($authResult.UserInfo.DisplayableId)"
-		
-		$authToken = $authResult.AccessToken
-		
-		return $authToken;
-	
-	}
+    # The begin & end are needed to avoid the .net type error when the dll was not loaded
+    Ensure-ActiveDirectoryDll
+
+    if ($Script:AuthContext -eq $null)
+    {
+        Write-Verbose -Message 'Creating new AuthenticationContext object'
+        $script:AuthContext = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext -ArgumentList ($PBIAuthorityUrl)
+    }
+
+    Write-Verbose -Message 'Getting the Authentication Token'
+    if ($PSCmdlet.ParameterSetName -eq 'credential')
+    {
+        Write-Verbose -Message 'Using username+password authentication flow'
+        $UserCredential = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.UserCredential -ArgumentList ($Credential.UserName, $Credential.Password)
+        $AuthResult = $Script:AuthContext.AcquireToken($PbiResourceUrl,$ClientId, $UserCredential)
+    }
+    else
+    {
+        Write-Verbose -Message 'Using default authentication flow'
+        if ($ForceAskCredentials)
+        {
+            $PromptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Always
+        }
+        else
+        {
+            $PromptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Auto
+        }
+        $authResult = $script:authContext.AcquireToken($PbiResourceUrl,$ClientId, [Uri]$RedirectUri, $PromptBehavior)
+    }
+
+    Write-Verbose -Message "Authenticated as $($AuthResult.UserInfo.DisplayableId)"
+    $AuthResult.AccessToken
 }
 
 Function Set-PBIGroup{
