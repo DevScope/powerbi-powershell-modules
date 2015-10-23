@@ -823,182 +823,200 @@ Function Clear-PBITableRows{
 	
 }
 
-Function Out-PowerBI{
-	<#
-.SYNOPSIS
-    A one line cmdlet that you can use to send data into PowerBI
+Function Out-PowerBI
+{
+    <#
+            .SYNOPSIS
+            A one line cmdlet that you can use to send data into PowerBI
 
-.DESCRIPTION	
-		
+            .DESCRIPTION
 
-.PARAMETER Data
-    The data that will be sent to PowerBI
 
-.PARAMETER ClientId
-    The Client Id of the Azure AD application
+            .PARAMETER Data
+            The data that will be sent to PowerBI
 
-.PARAMETER AuthToken
-    The AccessToken - Optional
+            .PARAMETER ClientId
+            The Client Id of the Azure AD application
 
-.PARAMETER UserName
-    The Username - Optional
+            .PARAMETER AuthToken
+            The AccessToken - Optional
 
-.PARAMETER Password
-    The Password - Optional
+            .PARAMETER Credential
+            specifies a PSCredential object used to authenticate to the PowerBI service. This is used to automate the
+            sign in process so you aren't prompted to enter a username and password in the GUI.
 
-.PARAMETER DataSetName
-    The name of the dataset - Optional, by default will always create a new dataset with a timestamp
+            .PARAMETER DataSetName
+            The name of the dataset - Optional, by default will always create a new dataset with a timestamp
 
-.PARAMETER TableName
-    The name of the table in the DataSet - Optional, by default will be named "Table"
+            .PARAMETER TableName
+            The name of the table in the DataSet - Optional, by default will be named "Table"
 
-.PARAMETER BatchSize
-    The size of the batch that is sent to PowerBI as HttpPost.
-	
-	If for example the batch size is 100 and a collection of
-	1000 rows are being pushed then this cmdlet will make 10 
-	HttpPosts
+            .PARAMETER BatchSize
+            The size of the batch that is sent to PowerBI as HttpPost.
 
-.PARAMETER MultipleTables
-    A indication that the hashtable passed is a multitable
-	
-.EXAMPLE
-        Get-Process | Out-PowerBI -clientId "7a7be4f7-c64d-41da-94db-7fb8200f029c"
-		
-		1..53 |% {	
-			@{
-				Id = $_
-				; Name = "Record $_"
-				; Date = [datetime]::Now
-				; Value = (Get-Random -Minimum 10 -Maximum 1000)
-			}
-		} | Out-PowerBI -clientId "7a7be4f7-c64d-41da-94db-7fb8200f029c"  -verbose
+            If for example the batch size is 100 and a collection of
+            1000 rows are being pushed then this cmdlet will make 10
+            HttpPosts
 
-#>
-	[CmdletBinding(DefaultParameterSetName = "authToken")]		
-	param(						
-		[Parameter(ValueFromPipeline=$true)] $data,
-		[Parameter(Mandatory=$false)] [string] $clientId = $pbiDefaultClientId,
-		[Parameter(Mandatory=$false, ParameterSetName = "authToken")] [string] $authToken,
-		[Parameter(Mandatory=$true, ParameterSetName = "username")] [string] $userName,
-		[Parameter(Mandatory=$true, ParameterSetName = "username")] [string] $password,	
-		[Parameter(Mandatory=$false)] [string] $dataSetName	= ("PowerBIPS_{0:yyyyMMdd_HHmmss}"	-f (Get-Date)),	
-		[Parameter(Mandatory=$false)] [string] $tableName	= "Table",
-		[Parameter(Mandatory=$false)] [int] $batchSize = 1000,	
-		# Need this because $data could be an hashtable (multiple tables) and the rows also can be hashtables...
-		[Parameter(Mandatory=$false)] [switch] $multipleTables,
-		[Parameter(Mandatory=$false)] [switch] $forceAskCredentials,
-		[Parameter(Mandatory=$false)] [switch] $forceTableSchemaUpdate,
-		[Parameter(Mandatory=$false)] [hashtable]$types		
-	)
-	
-	begin {
-		$dataToProcess = @()		
-	}
-	process {	
-		$dataToProcess += $data		
-	}
-	end {
-		if ($dataToProcess.Count -eq 0)
-		{
-			Write-Verbose "There is no data to process"
-			return
-		}
-		
-		if ($PsCmdlet.ParameterSetName -eq "username")
-		{
-			$authToken = Get-PBIAuthToken -clientId $clientId -userName $userName -password $password
-		}
-		else
-		{
-			if ([string]::IsNullOrEmpty($authToken))
-			{
-				$authToken = Get-PBIAuthToken -clientId $clientId -forceAskCredentials:$forceAskCredentials
-			}
-		}
+            .PARAMETER MultipleTables
+            A indication that the hashtable passed is a multitable
+
+            .EXAMPLE
+            Get-Process | Out-PowerBI -clientId "7a7be4f7-c64d-41da-94db-7fb8200f029c"
+
+            1..53 |% {
+            @{
+                Id = $_
+                ; Name = "Record $_"
+                ; Date = [datetime]::Now
+                ; Value = (Get-Random -Minimum 10 -Maximum 1000)
+            }
+            } | Out-PowerBI -clientId "7a7be4f7-c64d-41da-94db-7fb8200f029c"  -verbose
+
+    #>
+    [CmdletBinding(DefaultParameterSetName = "authToken")]
+    param
+    (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        $Data,
+
+        [string]
+        $ClientId = $pbiDefaultClientId,
+
+        [Parameter(ParameterSetName = "authToken")]
+        [string]
+        $AuthToken,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "credential")]
+        [System.Management.Automation.CredentialAttribute()]
+        $Credential,
+
+        [string]
+        $DataSetName = ("PowerBIPS_{0:yyyyMMdd_HHmmss}"	-f (Get-Date)),
+
+        [string]
+        $TableName	= "Table",
+        
+        [int]
+        $BatchSize = 1000,
+
+        # Need this because $data could be an hashtable (multiple tables) and the rows also can be hashtables...
+        [switch]
+        $MultipleTables,
+
+        [switch]
+        $ForceAskCredentials,
+
+        [switch]
+        $ForceTableSchemaUpdate,
+
+        [hashtable]
+        $Types
+    )
+
+    begin
+    {
+        $dataToProcess = @()
+    }
+    process
+    {
+        $dataToProcess += $Data
+    }
+    end
+    {
+        if ($dataToProcess.Count -eq 0)
+        {
+            Write-Verbose "There is no data to process"
+            return
+        }
+
+        if ($PsCmdlet.ParameterSetName -eq "credential")
+        {
+            $AuthToken = Get-PBIAuthToken -ClientId $ClientId -Credential $Credential
+        }
+        else
+        {
+            if ([string]::IsNullOrEmpty($AuthToken))
+            {
+                $AuthToken = Get-PBIAuthToken -ClientId $ClientId -forceAskCredentials:$ForceAskCredentials
+            }
+        }
 
         # Prepare the Data to be processed
-		
-		if ($dataToProcess.Count -eq 1)		
-		{
-			$dataToProcessSample = $dataToProcess[0]
-				
-			# If is a DataSet then transform to a hashtable with DataTables in it
-			if ($dataToProcessSample -is [System.Data.DataSet])
-			{
-				$dataToProcess = @{}
-					
-				$dataToProcessSample.Tables |% {
-					$dataToProcess.Add($_.TableName, $_);					
-				}
-			}			
-			elseif ($multipleTables -and ($dataToProcessSample -is [hashtable]))
-			{
-				$dataToProcess = $dataToProcess[0]
-			}
-			else
-			{
-				$dataToProcess = @{$tableName = $dataToProcess}
-				#throw "When -multipleTables is specified you must pass into -data an hashtable with a key for each table"
-			}
-		}		
-		else
-		{
-			$dataToProcess = @{$tableName = $dataToProcess}
-		}
+        if ($dataToProcess.Count -eq 1)
+        {
+            $dataToProcessSample = $dataToProcess[0]
+
+            # If is a DataSet then transform to a hashtable with DataTables in it
+            if ($dataToProcessSample -is [System.Data.DataSet])
+            {
+                $dataToProcess = @{}
+
+                $dataToProcessSample.Tables | Foreach-Object {
+                    $dataToProcess.Add($_.TableName, $_)
+                }
+            }
+            elseif ($MultipleTables -and ($dataToProcessSample -is [hashtable]))
+            {
+                $dataToProcess = $dataToProcess[0]
+            }
+            else
+            {
+                $dataToProcess = @{$TableName = $dataToProcess}
+                #throw "When -multipleTables is specified you must pass into -data an hashtable with a key for each table"
+            }
+        }
+        else
+        {
+            $dataToProcess = @{$TableName = $dataToProcess}
+        }
 
         # Remove empty tables
+        $tablesToRemove = $dataToProcess.GetEnumerator() | Where-Object {-not $_.Value } | Select-Object -ExpandProperty Key
 
-        $tablesToRemove = $dataToProcess.GetEnumerator() |? {-not $_.Value } | Select -ExpandProperty Key 
+        $tablesToRemove | Foreach-Object {
+            $dataToProcess.Remove($_)
+        }
 
-        $tablesToRemove |% {
-	        $dataToProcess.Remove($_)
-        }        				
+        # Create the DataSet in PowerBI (if not exists)
+        $pbiDataSet = Get-PBIDataSet -authToken $AuthToken -name $DataSetName
 
-		# Create the DataSet in PowerBI (if not exists)
-		
-		$pbiDataSet = Get-PBIDataSet -authToken $authToken -name $dataSetName
-		
-		if ($pbiDataSet -eq $null -or $forceTableSchemaUpdate)
-		{		
-			# Create the DataSet schema object
-			
-			$dataSet = @{
-				name = $dataSetName
-			    ; tables = @()
-			}							
-					
-			# Process each table schema individually
-			
-			foreach ($h in ($dataToProcess.GetEnumerator() | sort Name)) {
-																
-				$dataSet.tables += ConvertTo-PBITable -obj $h.Value -name $h.Name
-			}				
-			
-			if ($pbiDataSet -eq $null)
-			{
-				$pbiDataSet = New-PBIDataSet -authToken $authToken -dataSet $dataSet -types $types
-			}
-			else
-			{
-				# Updates the schema of all the tables
-				$dataSet.tables |% {
-					Update-PBITableSchema -authToken $authToken -dataSetId $pbiDataSet.id -table $_ -types $types
-				}
-			}						
-		}
-			
-		# Upload rows for each table
-						
-		foreach ($h in ($dataToProcess.GetEnumerator() | sort Name)) {
-			
-			$tableName = $h.Name
-			
-			$tableData = ConvertTo-PBITableData $h.Value
-									
-			$tableData | Add-PBITableRows -authToken $authToken -dataSetId $pbiDataSet.Id -tableName $tableName -batchSize $batchSize
-		}				
-	}				
+        if ($pbiDataSet -eq $null -or $ForceTableSchemaUpdate)
+        {
+            # Create the DataSet schema object
+            $dataSet = @{
+                name = $DataSetName
+                tables = @()
+            }
+
+            # Process each table schema individually
+            foreach ($h in ($dataToProcess.GetEnumerator() | Sort-Object -Property Name)) {
+
+                $dataSet.tables += ConvertTo-PBITable -obj $h.Value -name $h.Name
+            }
+
+            if ($pbiDataSet -eq $null)
+            {
+                $pbiDataSet = New-PBIDataSet -authToken $AuthToken -dataSet $dataSet -types $Types
+            }
+            else
+            {
+                # Updates the schema of all the tables
+                $dataSet.tables | Foreach-Object {
+                    Update-PBITableSchema -authToken $AuthToken -dataSetId $pbiDataSet.id -table $_ -types $Types
+                }
+            }
+        }
+
+        # Upload rows for each table
+        foreach ($h in ($dataToProcess.GetEnumerator() | Sort-Object -Property Name))
+		{
+
+            $TableName = $h.Name
+            $tableData = ConvertTo-PBITableData $h.Value
+            $tableData | Add-PBITableRows -authToken $AuthToken -dataSetId $pbiDataSet.Id -tableName $TableName -batchSize $BatchSize
+        }
+    }
 }
 
 Function Get-PBIImports{
