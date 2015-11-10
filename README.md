@@ -133,7 +133,10 @@ Import-Csv "c:\csvData.csv" | Out-PowerBI -dataSetName "CSVSales" -tableName "Sa
 $authToken = Get-PBIAuthToken
 
 # To use username+password authentication you need to create an Azure AD Application and get it's id
-$authTokenWithUsername = Get-PBIAuthToken -clientId "4c3c58d6-8c83-48c2-a604-67c1b740d167" -userName "<username>" -password "<password>"
+
+$authTokenWithUsername = Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -Credential (Get-Credential -username "<username>"
+
+$authTokenWithUsernameAndPassword = Get-PBIAuthToken -Credential (new-object System.Management.Automation.PSCredential("<username>",(ConvertTo-SecureString -String "<password>" -AsPlainText -Force)))
 
 ```
 
