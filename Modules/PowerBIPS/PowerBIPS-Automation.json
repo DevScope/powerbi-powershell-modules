@@ -1,0 +1,24 @@
+{
+  "ConnectionFields": [
+    {
+      "IsEncrypted": false,
+      "IsOptional": false,
+      "Name": "ClientId",
+      "TypeName": "System.String"
+    },
+    {
+      "IsEncrypted": false,
+      "IsOptional": false,
+      "Name": "UserName",
+      "TypeName": "System.String"
+    },
+    {
+      "IsEncrypted": true,
+      "IsOptional": false,
+      "Name": "Password",
+      "TypeName": "System.String"
+    }
+  ],
+  "ConnectionTypeName": "PowerBI",
+  "IntegrationModuleName":  "PowerBIPS"
+}
