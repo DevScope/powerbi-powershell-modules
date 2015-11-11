@@ -49,9 +49,7 @@ Function Get-PBIAuthToken{
 .DESCRIPTION	
 	To authenticate with PowerBI uses OAuth 2.0 with the Azure AD Authentication Library (ADAL)
 	
-	If a username and password is not supplied a popup will appear for the user to authenticate.
-	
-	It will automatically download and install the required nuget: "Microsoft.IdentityModel.Clients.ActiveDirectory".		
+	If a username and password is not supplied a popup will appear for the user to authenticate.		
 
 .PARAMETER ClientId
     The Client Id of the Azure AD application
@@ -85,15 +83,6 @@ Function Get-PBIAuthToken{
 			[Parameter(Mandatory=$false, ParameterSetName = "default")] [string] $redirectUri,
 			[Parameter(Mandatory=$false, ParameterSetName = "default")] [switch] $forceAskCredentials = $false			
 		)
-
-	begin{
-		
-		# The begin & end are needed to avoid the .net type error when the dll was not loaded
-		
-		#Ensure-ActiveDirectoryDll
-		#Dll is included in the module and loaded via the manifest file
-	}
-	end{
 	
 		if ($script:authContext -eq $null)
 		{
@@ -135,8 +124,6 @@ Function Get-PBIAuthToken{
 		$authToken = $authResult.AccessToken
 		
 		return $authToken;
-	
-	}
 }
 
 Function Set-PBIGroup{
@@ -1339,51 +1326,6 @@ Function Assert-DataSetTableObjectSchema($table)
 			throw "'column.dataType' dont exists"
 		}
 	}	
-}
-
-Function Ensure-ActiveDirectoryDll
-{
-	if (-not ("Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext" -as [type]))
-	{
-		Write-Verbose "Loading Microsoft.IdentityModel.Clients.ActiveDirectory"
-		
-		$tempDir = "${env:Temp}\PowerBIPS"
-		
-		$version = "2.14.201151115"
-		$dllPath = "$tempDir\Microsoft.IdentityModel.Clients.ActiveDirectory.$version\lib\net45\Microsoft.IdentityModel.Clients.ActiveDirectory.dll"
-		
-		# Check is the dll has already been downloaded
-		
-		if (!(Test-Path $dllPath))
-		{
-			New-Item $tempDir -type Directory -Force | Out-Null
-		}
-		
-		if (!(Test-Path "$tempDir\nuget.exe"))
-		{
-			Invoke-WebRequest -Uri 'https://oneget.org/nuget-anycpu-2.8.3.6.exe' -OutFile "$tempDir\nuget.exe"
-		}
-
-		# Get the nuget with the required dll
-		
-		if (!(Test-Path $dllPath))
-		{
-			Start-Process -FilePath "$tempDir\nuget.exe" -ArgumentList "install Microsoft.IdentityModel.Clients.ActiveDirectory -version $version" -WorkingDirectory $tempDir -Wait | Out-Null
-
-			if (!(Test-Path $dllPath))
-			{
-				throw "Could not load Microsoft.IdentityModel.Clients.ActiveDirectory.dll"
-			}
-		}
-
-		# load the type
-		
-		Add-Type -Path $dllPath
-	}
-	else
-	{
-		Write-Verbose "Microsoft.IdentityModel.Clients.ActiveDirectory already loaded"
-	}
 }
 
 Function Resolve-GroupId($authToken, $groupId, $groupName)
