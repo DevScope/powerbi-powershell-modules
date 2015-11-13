@@ -34,6 +34,7 @@
     <Folder Include="Samples\PBIX\" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Microsoft.IdentityModel.Clients.ActiveDirectory.dll" />
     <Compile Include="Samples\Modules\InvokeTwitterAPIs.psm1" />
     <Compile Include="PowerBIPS.psd1" />
     <Compile Include="PowerBIPS.psm1" />
@@ -52,6 +53,9 @@
     <Compile Include="Samples\PowerBIPS.Sample.Groups.ps1" />
     <Compile Include="Samples\PowerBIPS.Sample.Simple.ps1" />
     <Compile Include="Samples\PowerBIPS.TestAuth.ps1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="PowerBIPS-Automation.json" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Target Name="Build" />

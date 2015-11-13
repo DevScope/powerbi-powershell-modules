@@ -47,6 +47,7 @@ Function Get-PBIAuthToken
             .SYNOPSIS
             Gets the authentication token required to comunicate with the PowerBI API's
 
+
             .DESCRIPTION
             To authenticate with PowerBI uses OAuth 2.0 with the Azure AD Authentication Library (ADAL)
 
@@ -99,8 +100,7 @@ Function Get-PBIAuthToken
         $ForceAskCredentials = $false
     )
 
-    # The begin & end are needed to avoid the .net type error when the dll was not loaded
-    Ensure-ActiveDirectoryDll
+   
 
     if ($Script:AuthContext -eq $null)
     {
@@ -280,7 +280,7 @@ Function Get-PBIGroup{
 		[Parameter(Mandatory=$false)] [string] $name,
 		[Parameter(Mandatory=$false)] [string] $id		
 	)
-	
+
 	$authToken = Resolve-PowerBIAuthToken $authToken
 
 	$headers = Get-PowerBIRequestHeader $authToken
@@ -355,9 +355,8 @@ Function Get-PBIDataSet{
 		[Parameter(Mandatory=$false)] [switch] $includeDefinition,
 		[Parameter(Mandatory=$false)] [switch] $includeTables		
 	)
-	
-	$authToken = Resolve-PowerBIAuthToken $authToken
 
+	$authToken = Resolve-PowerBIAuthToken $authToken
 	$headers = Get-PowerBIRequestHeader $authToken
 		
 	$url = Get-PowerBIRequestUrl -scope "datasets"
@@ -518,7 +517,7 @@ Function New-PBIDataSet{
 #>
 	[CmdletBinding()]	
 	param(									
-		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$true)] [string] $authToken,
 		[Parameter(Mandatory=$true, HelpMessage = "Must be of type [hashtable] or [dataset]")] $dataSet,
 		[Parameter(Mandatory=$false)] [string]$defaultRetentionPolicy,
 		[Parameter(Mandatory=$false)] [hashtable]$types
@@ -1375,6 +1374,7 @@ Function ConvertTo-PBIDataType($typeName, $errorIfNotCompatible = $true)
 	return $pbiTypeName
 }
 
+
 Function Resolve-PowerBIAuthToken($authToken)
 {
 	if ([string]::IsNullOrEmpty($authToken))
@@ -1445,51 +1445,6 @@ Function Assert-DataSetTableObjectSchema($table)
 			throw "'column.dataType' dont exists"
 		}
 	}	
-}
-
-Function Ensure-ActiveDirectoryDll
-{
-	if (-not ("Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext" -as [type]))
-	{
-		Write-Verbose "Loading Microsoft.IdentityModel.Clients.ActiveDirectory"
-		
-		$tempDir = "${env:Temp}\PowerBIPS"
-		
-		$version = "2.14.201151115"
-		$dllPath = "$tempDir\Microsoft.IdentityModel.Clients.ActiveDirectory.$version\lib\net45\Microsoft.IdentityModel.Clients.ActiveDirectory.dll"
-		
-		# Check is the dll has already been downloaded
-		
-		if (!(Test-Path $dllPath))
-		{
-			New-Item $tempDir -type Directory -Force | Out-Null
-		}
-		
-		if (!(Test-Path "$tempDir\nuget.exe"))
-		{
-			Invoke-WebRequest -Uri 'https://oneget.org/nuget-anycpu-2.8.3.6.exe' -OutFile "$tempDir\nuget.exe"
-		}
-
-		# Get the nuget with the required dll
-		
-		if (!(Test-Path $dllPath))
-		{
-			Start-Process -FilePath "$tempDir\nuget.exe" -ArgumentList "install Microsoft.IdentityModel.Clients.ActiveDirectory -version $version" -WorkingDirectory $tempDir -Wait | Out-Null
-
-			if (!(Test-Path $dllPath))
-			{
-				throw "Could not load Microsoft.IdentityModel.Clients.ActiveDirectory.dll"
-			}
-		}
-
-		# load the type
-		
-		Add-Type -Path $dllPath
-	}
-	else
-	{
-		Write-Verbose "Microsoft.IdentityModel.Clients.ActiveDirectory already loaded"
-	}
 }
 
 Function Resolve-GroupId($authToken, $groupId, $groupName)
