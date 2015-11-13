@@ -100,8 +100,7 @@ Function Get-PBIAuthToken
         $ForceAskCredentials = $false
     )
 
-    # The begin & end are needed to avoid the .net type error when the dll was not loaded
-    Ensure-ActiveDirectoryDll
+   
 
     if ($Script:AuthContext -eq $null)
     {
