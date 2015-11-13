@@ -64,7 +64,9 @@ FunctionsToExport = @(
 	, "Out-PowerBI"	
 	, "Get-PBIDataSet", "Test-PBIDataSet", "New-PBIDataSet"
 	, "Add-PBITableRows", "Clear-PBITableRows", "Update-PBITableSchema"	
-	, "Get-PBIImports", "Import-PBIFile")
+	, "Get-PBIImports", "Import-PBIFile"
+	, "Get-PBIDashboard", "Get-PBIDashboardTile"
+)
 
 # Cmdlets to export from this module
 CmdletsToExport = @()

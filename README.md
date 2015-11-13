@@ -16,11 +16,12 @@ Cmdlets present in the module:
 | [Get-PBIGroup](#GetPBIGroup) |  Gets the PowerBI groups in the user workspace |
 | [New-PBIDataSet](#NewPBIDataSet) |    Create a new DataSet   |
 | [Add-PBITableRows](#AddPBITableRows) | Add's a collection of rows into a powerbi dataset table in batches |
-| [Get-PBIDataSet](#GetPBIDataSet) | Gets a DataSet(s) collection, includes definition and tables |
+| [Get-PBIDataSet](#GetPBIDataSet) | Gets a DataSet collection, includes definition and tables |
 | [Test-PBIDataSet](#TestPBIDataSet) |  Test the existence of a DataSet by name |
 | [Clear-PBITableRows](#ClearPBITableRows) |  Delete all the rows of a PowerBI dataset table |
 | [Update-PBITableSchema](#UpdatePBITableSchema) |  Updates a table schema |
-
+| [Get-PBIDashboard](#GetPBIDashboard) | Gets a Dashboard collection
+| [Get-PBIDashboardTile](#GetPBIDashboardTile) | Gets a Tile collection from a dashboard
 
 For a better experience please copy this module on your UserProfile directory:
 * %USERPROFILE%\Documents\WindowsPowershell\Modules\PowerBIPS
@@ -132,7 +133,10 @@ Import-Csv "c:\csvData.csv" | Out-PowerBI -dataSetName "CSVSales" -tableName "Sa
 $authToken = Get-PBIAuthToken
 
 # To use username+password authentication you need to create an Azure AD Application and get it's id
-$authTokenWithUsername = Get-PBIAuthToken -clientId "4c3c58d6-8c83-48c2-a604-67c1b740d167" -userName "<username>" -password "<password>"
+
+$authTokenWithUsername = Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -Credential (Get-Credential -username "<username>"
+
+$authTokenWithUsernameAndPassword = Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -Credential (new-object System.Management.Automation.PSCredential("<username>",(ConvertTo-SecureString -String "<password>" -AsPlainText -Force)))
 
 ```
 
@@ -248,5 +252,21 @@ $tableSchema =  @{
 }
 
 Update-PBITableSchema -authToken $authToken -dataSetId "<dataSetId>" -table $tableSchema -verbose
+
+```
+
+## <a name="GetPBIDashboard"></a>Get-PBIDashboard - Gets a Dashboard collection
+
+```powershell
+
+$dashboards = Get-PBIDashboard 
+
+```
+
+## <a name="GetPBIDashboardTile"></a>Get-PBIDashboardTile - Gets a Tile collection
+
+```powershell
+
+$tiles = Get-PBIDashboardTile -dashboardId "XXX-XXX-XXX" 
 
 ```

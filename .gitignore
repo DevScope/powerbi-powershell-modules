@@ -2,3 +2,4 @@ Images/Thumbs.db
 *.user
 UpgradeLog.htm
 *.suo
+Modules/.vs/config/applicationhost.config

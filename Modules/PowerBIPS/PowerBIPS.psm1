@@ -41,89 +41,97 @@ $script:pbiGroupId = $null
 
 #endregion
 
-Function Get-PBIAuthToken{  
-<#
-.SYNOPSIS
-    Gets the authentication token required to comunicate with the PowerBI API's
+Function Get-PBIAuthToken
+{
+    <#
+            .SYNOPSIS
+            Gets the authentication token required to comunicate with the PowerBI API's
 
-.DESCRIPTION	
-	To authenticate with PowerBI uses OAuth 2.0 with the Azure AD Authentication Library (ADAL)
-	
-	If a username and password is not supplied a popup will appear for the user to authenticate.		
 
-.PARAMETER ClientId
-    The Client Id of the Azure AD application
+            .DESCRIPTION
+            To authenticate with PowerBI uses OAuth 2.0 with the Azure AD Authentication Library (ADAL)
 
-.PARAMETER UserName
-    The username used to authenticate with PowerBI
-	
-.PARAMETER Password
-    The password used to authenticate with PowerBI
+            If a credential is not supplied a popup will appear for the user to authenticate.
 
-.PARAMETER RedirectUri
-    The redirect URI associated with the native client application
+            It will automatically download and install the required nuget: "Microsoft.IdentityModel.Clients.ActiveDirectory".
 
-.PARAMETER ForceAskCredentials
-    Forces the authentication popup to always ask for the username and password
+            .PARAMETER ClientId
+            The Client Id of the Azure AD application
 
- .EXAMPLE
-        Get-PBIAuthToken -clientId "C0E8435C-614D-49BF-A758-3EF858F8901B"
-        Gets the authentication token but only after the user authenticates with PowerBI in the popup 
- .EXAMPLE
-        Get-PBIAuthToken -clientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -username "user@pbitenant.onmicrosoft.com" -password "youwish"
-        Gets the authentication token after authenticate with PowerShell with the supplied username and password
+            .PARAMETER Credential
+			Specifies a PSCredential object or a string username used to authenticate to PowerBI. If only a username is specified 
+			this will prompt for the password. Note that this will not work with federated users.
 
-#>
-	[CmdletBinding(DefaultParameterSetName = "default")]	
-	[OutputType([string])]
-	param(				
-			[Parameter(Mandatory=$false)] [string] $clientId = $pbiDefaultClientId,
-			[Parameter(Mandatory=$true, ParameterSetName = "username")] [string] $userName,
-			[Parameter(Mandatory=$true, ParameterSetName = "username")] [string] $password,	
-			[Parameter(Mandatory=$false, ParameterSetName = "default")] [string] $redirectUri,
-			[Parameter(Mandatory=$false, ParameterSetName = "default")] [switch] $forceAskCredentials = $false			
-		)
-	
-		if ($script:authContext -eq $null)
-		{
-			Write-Verbose "Creating new AuthenticationContext object"			
-			$script:authContext = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext($pbiAuthorityUrl)
-		}				
-		
-		Write-Verbose "Getting the Authentication Token"						
-			
-		if ($PsCmdlet.ParameterSetName -eq "username")
-		{
-			Write-Verbose "Using username+password authentication flow"	
-			
-			$userCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.UserCredential($userName, $password)
-			
-			$authResult = $script:authContext.AcquireToken($pbiResourceUrl,$clientId, $userCredential)
-		}
-		else
-		{
-			Write-Verbose "Using default authentication flow"	
-			
-			if ([string]::IsNullOrEmpty($redirectUri))
-			{
-				$redirectUri = $pbiDefaultAuthRedirectUri
-			}
-			
-			$promptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Auto
-			
-			if ($forceAskCredentials)
-			{
-				$promptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Always
-			}
-			
-			$authResult = $script:authContext.AcquireToken($pbiResourceUrl,$clientId, [Uri]$redirectUri, $promptBehavior)			
-		}		
+            .PARAMETER RedirectUri
+            The redirect URI associated with the native client application
 
-		Write-Verbose "Authenticated as $($authResult.UserInfo.DisplayableId)"
-		
-		$authToken = $authResult.AccessToken
-		
-		return $authToken;
+            .PARAMETER ForceAskCredentials
+            Forces the authentication popup to always ask for the username and password
+
+            .EXAMPLE
+            Get-PBIAuthToken -clientId "C0E8435C-614D-49BF-A758-3EF858F8901B"
+            Returns the access token for the PowerBI REST API using the client ID. You'll be presented with a pop-up window for 
+			user authentication.
+            .EXAMPLE
+			$Credential = Get-Credential
+            Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -Credential $Credential
+            Returns the access token for the PowerBI REST API using the client ID and a PSCredential object.
+    #>
+    
+    [CmdletBinding(DefaultParameterSetName = 'default')]
+    [OutputType([string])]
+    param
+    (
+        [Parameter(ParameterSetName = 'default')]
+        [Parameter(ParameterSetName = 'credential')]
+        [string]
+        $ClientId = $pbiDefaultClientId,
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'credential')]
+        [System.Management.Automation.CredentialAttribute()]
+        $Credential,
+
+        [Parameter(ParameterSetName = 'default')]
+        [string]
+        $RedirectUri = $PBIDefaultAuthRedirectUri,
+
+        [Parameter(ParameterSetName = 'default')]
+        [switch]
+        $ForceAskCredentials = $false
+    )
+
+    # The begin & end are needed to avoid the .net type error when the dll was not loaded
+    Ensure-ActiveDirectoryDll
+
+    if ($Script:AuthContext -eq $null)
+    {
+        Write-Verbose -Message 'Creating new AuthenticationContext object'
+        $script:AuthContext = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext -ArgumentList ($PBIAuthorityUrl)
+    }
+
+    Write-Verbose -Message 'Getting the Authentication Token'
+    if ($PSCmdlet.ParameterSetName -eq 'credential')
+    {
+        Write-Verbose -Message 'Using username+password authentication flow'
+        $UserCredential = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.UserCredential -ArgumentList ($Credential.UserName, $Credential.Password)
+        $AuthResult = $Script:AuthContext.AcquireToken($PbiResourceUrl,$ClientId, $UserCredential)
+    }
+    else
+    {
+        Write-Verbose -Message 'Using default authentication flow'
+        if ($ForceAskCredentials)
+        {
+            $PromptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Always
+        }
+        else
+        {
+            $PromptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Auto
+        }
+        $authResult = $script:authContext.AcquireToken($PbiResourceUrl,$ClientId, [Uri]$RedirectUri, $PromptBehavior)
+    }
+
+    Write-Verbose -Message "Authenticated as $($AuthResult.UserInfo.DisplayableId)"
+    $AuthResult.AccessToken
 }
 
 Function Set-PBIGroup{
@@ -161,6 +169,100 @@ Function Set-PBIGroup{
 	{
 		$script:pbiGroupId = Resolve-GroupId $authToken $id $name
 	}
+}
+
+Function Get-PBIDashboard{
+<#
+.SYNOPSIS    
+	Gets all the PowerBI existing dashboards and returns as an array of custom objects.
+		
+.EXAMPLE
+			
+		Get-PBIDashboard -authToken $authToken		
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $name,
+		[Parameter(Mandatory=$false)] [string] $id		
+	)
+	
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+	Write-Verbose "Getting Dashboards"
+	
+	$result = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "dashboards" -beta) -Headers $headers -Method Get 
+	
+	$dashboards = $result.value
+	
+	Write-Verbose "Found $($dashboards.count) groups."			
+	
+	if (-not [string]::IsNullOrEmpty($name))
+	{
+		Write-Verbose "Searching for the dashboard '$name'"		
+		
+		$dashboards = @($dashboards |? name -eq $name)
+		
+		if ($dashboards.Count -ne 0)
+		{
+			Write-Verbose "Found dashboard with name: '$name'"				
+		}
+		else
+		{
+			throw "Cannot find dashboard with name: '$name'"			
+		}				
+	}	
+
+	Write-Output $dashboards
+}
+
+Function Get-PBIDashboardTile{
+<#
+.SYNOPSIS    
+	Gets all the PowerBI existing dashboards and returns as an array of custom objects.
+		
+.EXAMPLE
+			
+		Get-PBIDashboardTile -authToken $authToken -dashboardId "XXXX-XXXX-XXXX"		
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $dashboardId,	
+		[Parameter(Mandatory=$false)] [string] $tileId
+	)
+	
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+	Write-Verbose "Getting Dashboard '$dashboardId' tiles"
+	
+	$scope = "dashboards/$dashboardId/tiles"
+
+	if (-not [string]::IsNullOrEmpty($tileId))
+	{
+		$scope += "/$tileId"
+	}
+
+	$result = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope $scope -beta) -Headers $headers -Method Get 
+	
+	if ($result.value)
+	{
+		$tiles = $result.value
+	}
+	else
+	{
+		$tiles = @($result)
+	}	
+	
+	Write-Verbose "Found $($tiles.count) tiles."				
+
+	Write-Output $tiles
 }
 
 Function Get-PBIGroup{
@@ -721,182 +823,200 @@ Function Clear-PBITableRows{
 	
 }
 
-Function Out-PowerBI{
-	<#
-.SYNOPSIS
-    A one line cmdlet that you can use to send data into PowerBI
+Function Out-PowerBI
+{
+    <#
+            .SYNOPSIS
+            A one line cmdlet that you can use to send data into PowerBI
 
-.DESCRIPTION	
-		
+            .DESCRIPTION
 
-.PARAMETER Data
-    The data that will be sent to PowerBI
 
-.PARAMETER ClientId
-    The Client Id of the Azure AD application
+            .PARAMETER Data
+            The data that will be sent to PowerBI
 
-.PARAMETER AuthToken
-    The AccessToken - Optional
+            .PARAMETER ClientId
+            The Client Id of the Azure AD application
 
-.PARAMETER UserName
-    The Username - Optional
+            .PARAMETER AuthToken
+            The AccessToken - Optional
 
-.PARAMETER Password
-    The Password - Optional
+            .PARAMETER Credential
+            specifies a PSCredential object used to authenticate to the PowerBI service. This is used to automate the
+            sign in process so you aren't prompted to enter a username and password in the GUI.
 
-.PARAMETER DataSetName
-    The name of the dataset - Optional, by default will always create a new dataset with a timestamp
+            .PARAMETER DataSetName
+            The name of the dataset - Optional, by default will always create a new dataset with a timestamp
 
-.PARAMETER TableName
-    The name of the table in the DataSet - Optional, by default will be named "Table"
+            .PARAMETER TableName
+            The name of the table in the DataSet - Optional, by default will be named "Table"
 
-.PARAMETER BatchSize
-    The size of the batch that is sent to PowerBI as HttpPost.
-	
-	If for example the batch size is 100 and a collection of
-	1000 rows are being pushed then this cmdlet will make 10 
-	HttpPosts
+            .PARAMETER BatchSize
+            The size of the batch that is sent to PowerBI as HttpPost.
 
-.PARAMETER MultipleTables
-    A indication that the hashtable passed is a multitable
-	
-.EXAMPLE
-        Get-Process | Out-PowerBI -clientId "7a7be4f7-c64d-41da-94db-7fb8200f029c"
-		
-		1..53 |% {	
-			@{
-				Id = $_
-				; Name = "Record $_"
-				; Date = [datetime]::Now
-				; Value = (Get-Random -Minimum 10 -Maximum 1000)
-			}
-		} | Out-PowerBI -clientId "7a7be4f7-c64d-41da-94db-7fb8200f029c"  -verbose
+            If for example the batch size is 100 and a collection of
+            1000 rows are being pushed then this cmdlet will make 10
+            HttpPosts
 
-#>
-	[CmdletBinding(DefaultParameterSetName = "authToken")]		
-	param(						
-		[Parameter(ValueFromPipeline=$true)] $data,
-		[Parameter(Mandatory=$false)] [string] $clientId = $pbiDefaultClientId,
-		[Parameter(Mandatory=$false, ParameterSetName = "authToken")] [string] $authToken,
-		[Parameter(Mandatory=$true, ParameterSetName = "username")] [string] $userName,
-		[Parameter(Mandatory=$true, ParameterSetName = "username")] [string] $password,	
-		[Parameter(Mandatory=$false)] [string] $dataSetName	= ("PowerBIPS_{0:yyyyMMdd_HHmmss}"	-f (Get-Date)),	
-		[Parameter(Mandatory=$false)] [string] $tableName	= "Table",
-		[Parameter(Mandatory=$false)] [int] $batchSize = 1000,	
-		# Need this because $data could be an hashtable (multiple tables) and the rows also can be hashtables...
-		[Parameter(Mandatory=$false)] [switch] $multipleTables,
-		[Parameter(Mandatory=$false)] [switch] $forceAskCredentials,
-		[Parameter(Mandatory=$false)] [switch] $forceTableSchemaUpdate,
-		[Parameter(Mandatory=$false)] [hashtable]$types		
-	)
-	
-	begin {
-		$dataToProcess = @()		
-	}
-	process {	
-		$dataToProcess += $data		
-	}
-	end {
-		if ($dataToProcess.Count -eq 0)
-		{
-			Write-Verbose "There is no data to process"
-			return
-		}
-		
-		if ($PsCmdlet.ParameterSetName -eq "username")
-		{
-			$authToken = Get-PBIAuthToken -clientId $clientId -userName $userName -password $password
-		}
-		else
-		{
-			if ([string]::IsNullOrEmpty($authToken))
-			{
-				$authToken = Get-PBIAuthToken -clientId $clientId -forceAskCredentials:$forceAskCredentials
-			}
-		}
+            .PARAMETER MultipleTables
+            A indication that the hashtable passed is a multitable
+
+            .EXAMPLE
+            Get-Process | Out-PowerBI -clientId "7a7be4f7-c64d-41da-94db-7fb8200f029c"
+
+            1..53 |% {
+            @{
+                Id = $_
+                ; Name = "Record $_"
+                ; Date = [datetime]::Now
+                ; Value = (Get-Random -Minimum 10 -Maximum 1000)
+            }
+            } | Out-PowerBI -clientId "7a7be4f7-c64d-41da-94db-7fb8200f029c"  -verbose
+
+    #>
+    [CmdletBinding(DefaultParameterSetName = "authToken")]
+    param
+    (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        $Data,
+
+        [string]
+        $ClientId = $pbiDefaultClientId,
+
+        [Parameter(ParameterSetName = "authToken")]
+        [string]
+        $AuthToken,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "credential")]
+        [System.Management.Automation.CredentialAttribute()]
+        $Credential,
+
+        [string]
+        $DataSetName = ("PowerBIPS_{0:yyyyMMdd_HHmmss}"	-f (Get-Date)),
+
+        [string]
+        $TableName	= "Table",
+        
+        [int]
+        $BatchSize = 1000,
+
+        # Need this because $data could be an hashtable (multiple tables) and the rows also can be hashtables...
+        [switch]
+        $MultipleTables,
+
+        [switch]
+        $ForceAskCredentials,
+
+        [switch]
+        $ForceTableSchemaUpdate,
+
+        [hashtable]
+        $Types
+    )
+
+    begin
+    {
+        $dataToProcess = @()
+    }
+    process
+    {
+        $dataToProcess += $Data
+    }
+    end
+    {
+        if ($dataToProcess.Count -eq 0)
+        {
+            Write-Verbose "There is no data to process"
+            return
+        }
+
+        if ($PsCmdlet.ParameterSetName -eq "credential")
+        {
+            $AuthToken = Get-PBIAuthToken -ClientId $ClientId -Credential $Credential
+        }
+        else
+        {
+            if ([string]::IsNullOrEmpty($AuthToken))
+            {
+                $AuthToken = Get-PBIAuthToken -ClientId $ClientId -forceAskCredentials:$ForceAskCredentials
+            }
+        }
 
         # Prepare the Data to be processed
-		
-		if ($dataToProcess.Count -eq 1)		
-		{
-			$dataToProcessSample = $dataToProcess[0]
-				
-			# If is a DataSet then transform to a hashtable with DataTables in it
-			if ($dataToProcessSample -is [System.Data.DataSet])
-			{
-				$dataToProcess = @{}
-					
-				$dataToProcessSample.Tables |% {
-					$dataToProcess.Add($_.TableName, $_);					
-				}
-			}			
-			elseif ($multipleTables -and ($dataToProcessSample -is [hashtable]))
-			{
-				$dataToProcess = $dataToProcess[0]
-			}
-			else
-			{
-				$dataToProcess = @{$tableName = $dataToProcess}
-				#throw "When -multipleTables is specified you must pass into -data an hashtable with a key for each table"
-			}
-		}		
-		else
-		{
-			$dataToProcess = @{$tableName = $dataToProcess}
-		}
+        if ($dataToProcess.Count -eq 1)
+        {
+            $dataToProcessSample = $dataToProcess[0]
+
+            # If is a DataSet then transform to a hashtable with DataTables in it
+            if ($dataToProcessSample -is [System.Data.DataSet])
+            {
+                $dataToProcess = @{}
+
+                $dataToProcessSample.Tables | Foreach-Object {
+                    $dataToProcess.Add($_.TableName, $_)
+                }
+            }
+            elseif ($MultipleTables -and ($dataToProcessSample -is [hashtable]))
+            {
+                $dataToProcess = $dataToProcess[0]
+            }
+            else
+            {
+                $dataToProcess = @{$TableName = $dataToProcess}
+                #throw "When -multipleTables is specified you must pass into -data an hashtable with a key for each table"
+            }
+        }
+        else
+        {
+            $dataToProcess = @{$TableName = $dataToProcess}
+        }
 
         # Remove empty tables
+        $tablesToRemove = $dataToProcess.GetEnumerator() | Where-Object {-not $_.Value } | Select-Object -ExpandProperty Key
 
-        $tablesToRemove = $dataToProcess.GetEnumerator() |? {-not $_.Value } | Select -ExpandProperty Key 
+        $tablesToRemove | Foreach-Object {
+            $dataToProcess.Remove($_)
+        }
 
-        $tablesToRemove |% {
-	        $dataToProcess.Remove($_)
-        }        				
+        # Create the DataSet in PowerBI (if not exists)
+        $pbiDataSet = Get-PBIDataSet -authToken $AuthToken -name $DataSetName
 
-		# Create the DataSet in PowerBI (if not exists)
-		
-		$pbiDataSet = Get-PBIDataSet -authToken $authToken -name $dataSetName
-		
-		if ($pbiDataSet -eq $null -or $forceTableSchemaUpdate)
-		{		
-			# Create the DataSet schema object
-			
-			$dataSet = @{
-				name = $dataSetName
-			    ; tables = @()
-			}							
-					
-			# Process each table schema individually
-			
-			foreach ($h in ($dataToProcess.GetEnumerator() | sort Name)) {
-																
-				$dataSet.tables += ConvertTo-PBITable -obj $h.Value -name $h.Name
-			}				
-			
-			if ($pbiDataSet -eq $null)
-			{
-				$pbiDataSet = New-PBIDataSet -authToken $authToken -dataSet $dataSet -types $types
-			}
-			else
-			{
-				# Updates the schema of all the tables
-				$dataSet.tables |% {
-					Update-PBITableSchema -authToken $authToken -dataSetId $pbiDataSet.id -table $_ -types $types
-				}
-			}						
-		}
-			
-		# Upload rows for each table
-						
-		foreach ($h in ($dataToProcess.GetEnumerator() | sort Name)) {
-			
-			$tableName = $h.Name
-			
-			$tableData = ConvertTo-PBITableData $h.Value
-									
-			$tableData | Add-PBITableRows -authToken $authToken -dataSetId $pbiDataSet.Id -tableName $tableName -batchSize $batchSize
-		}				
-	}				
+        if ($pbiDataSet -eq $null -or $ForceTableSchemaUpdate)
+        {
+            # Create the DataSet schema object
+            $dataSet = @{
+                name = $DataSetName
+                tables = @()
+            }
+
+            # Process each table schema individually
+            foreach ($h in ($dataToProcess.GetEnumerator() | Sort-Object -Property Name)) {
+
+                $dataSet.tables += ConvertTo-PBITable -obj $h.Value -name $h.Name
+            }
+
+            if ($pbiDataSet -eq $null)
+            {
+                $pbiDataSet = New-PBIDataSet -authToken $AuthToken -dataSet $dataSet -types $Types
+            }
+            else
+            {
+                # Updates the schema of all the tables
+                $dataSet.tables | Foreach-Object {
+                    Update-PBITableSchema -authToken $AuthToken -dataSetId $pbiDataSet.id -table $_ -types $Types
+                }
+            }
+        }
+
+        # Upload rows for each table
+        foreach ($h in ($dataToProcess.GetEnumerator() | Sort-Object -Property Name))
+		{
+
+            $TableName = $h.Name
+            $tableData = ConvertTo-PBITableData $h.Value
+            $tableData | Add-PBITableRows -authToken $AuthToken -dataSetId $pbiDataSet.Id -tableName $TableName -batchSize $BatchSize
+        }
+    }
 }
 
 Function Get-PBIImports{
