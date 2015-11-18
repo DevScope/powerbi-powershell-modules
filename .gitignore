@@ -3,3 +3,4 @@ Images/Thumbs.db
 UpgradeLog.htm
 *.suo
 Modules/.vs/config/applicationhost.config
+Modules/PowerBIPS/PublishToGallery.ps1
