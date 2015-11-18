@@ -35,6 +35,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Microsoft.IdentityModel.Clients.ActiveDirectory.dll" />
+    <Compile Include="Microsoft.IdentityModel.Clients.ActiveDirectory.WindowsForms.dll" />
     <Compile Include="Samples\Modules\InvokeTwitterAPIs.psm1" />
     <Compile Include="PowerBIPS.psd1" />
     <Compile Include="PowerBIPS.psm1" />
