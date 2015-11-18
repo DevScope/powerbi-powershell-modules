@@ -4,7 +4,7 @@
 RootModule = 'PowerBIPS.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.2.0.4'
+ModuleVersion = '1.2.0.6'
 
 # ID used to uniquely identify this module
 GUID = '163A1640-A4F2-4B1F-A3AF-2796AD56200B'
@@ -89,7 +89,7 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-Tags = @('data', 'powerbi', 'api', 'developer')
+Tags = @('data', 'powerbi', 'bi', 'rest', 'api', 'developer')
 
 # A URL to the license for this module.
         # LicenseUri = ''
