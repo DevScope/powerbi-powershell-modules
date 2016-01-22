@@ -4,6 +4,4 @@ UpgradeLog.htm
 *.suo
 Modules/.vs/config/applicationhost.config
 Modules/PowerBIPS/PublishToGallery.ps1
-Modules/PowerBIPS/Publish/PowerBIPS/PowerBIPS-Automation.json
-Modules/PowerBIPS/Publish/PowerBIPS/PowerBIPS.psd1
-Modules/PowerBIPS/Publish/PowerBIPS/PowerBIPS.psm1
+Modules/PowerBIPS/Publish/*
