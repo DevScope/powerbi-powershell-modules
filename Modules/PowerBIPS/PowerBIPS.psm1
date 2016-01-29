@@ -170,6 +170,54 @@ Function Set-PBIGroup{
 	}
 }
 
+Function Get-PBIReport{
+<#
+.SYNOPSIS    
+	Gets all the PowerBI existing reports and returns as an array of custom objects.
+		
+.EXAMPLE
+			
+		Get-PBIReport -authToken $authToken		
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $name,
+		[Parameter(Mandatory=$false)] [string] $id		
+	)
+	
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+	Write-Verbose "Getting Reports"
+	
+	$result = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports" -beta) -Headers $headers -Method Get 
+	
+	$reports = $result.value
+	
+	Write-Verbose "Found $($reports.count) groups."			
+	
+	if (-not [string]::IsNullOrEmpty($name))
+	{
+		Write-Verbose "Searching for the dashboard '$name'"		
+		
+		$reports = @($reports |? name -eq $name)
+		
+		if ($reports.Count -ne 0)
+		{
+			Write-Verbose "Found report with name: '$name'"				
+		}
+		else
+		{
+			throw "Cannot find report with name: '$name'"			
+		}				
+	}	
+
+	Write-Output $reports
+}
+
 Function Get-PBIDashboard{
 <#
 .SYNOPSIS    

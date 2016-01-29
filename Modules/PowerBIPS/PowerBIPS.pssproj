@@ -45,6 +45,7 @@
     <Compile Include="Samples\CSVData\Sales.201504.csv" />
     <Compile Include="Samples\CSVData\Sales.201505.csv" />
     <Compile Include="Samples\CSVData\Sales.201506.csv" />
+    <Compile Include="PowerBIPS.Test.ps1" />
     <Compile Include="Samples\PowerBIPS.TwitterRealTime.ps1" />
     <Compile Include="Samples\PBIX\MyMovies.pbix" />
     <Compile Include="Samples\PowerBIPS.OutPowerBI.ps1" />
