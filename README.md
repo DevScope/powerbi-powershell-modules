@@ -7,6 +7,12 @@ More samples of usage here:
 * https://ruiromanoblog.wordpress.com/2015/03/03/create-a-real-time-it-dashboard-with-powerbips/
 * https://github.com/DevScope/powerbi-powershell-modules/blob/master/Modules/PowerBIPS/Samples
 
+Module also available on PowerShell Gallery:
+
+https://www.powershellgallery.com/packages/PowerBIPS
+
+To install just type "Install-Module -Name PowerBIPS"
+
 Cmdlets present in the module:
 
 | Cmdlet   |      Description      |
