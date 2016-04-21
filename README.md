@@ -1,3 +1,11 @@
+# PowerBIETL.psm1
+
+A PowerShell module to quickly copy data from PBI Desktop into SQL Server
+
+Sample of usage here: 
+
+* https://ruiromanoblog.wordpress.com/2016/04/21/use-power-bi-desktop-as-an-etl-tool/
+
 # PowerBIPS.psm1
 
 A PowerShell module for the new PowerBI developer REST APIs.
