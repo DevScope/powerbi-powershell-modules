@@ -32,7 +32,7 @@ THE SOFTWARE.
 
 #region Constants/Variables
 
-$pbiAuthorityUrl = "https://login.windows.net/common/oauth2/authorize"
+$pbiAuthorityUrl = "https://login.microsoftonline.com/common/oauth2/authorize"
 $pbiResourceUrl = "https://analysis.windows.net/powerbi/api"
 $pbiDefaultAuthRedirectUri = "https://login.live.com/oauth20_desktop.srf"
 $pbiDefaultClientId = "d57ac8af-1019-431d-8fed-5fd8db180388"
