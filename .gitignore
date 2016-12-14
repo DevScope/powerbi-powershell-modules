@@ -6,3 +6,4 @@ Modules/.vs/config/applicationhost.config
 Modules/PowerBIPS/PublishToGallery.ps1
 Modules/PowerBIPS/Publish/*
 Modules/PowerBIPS/PowerBIPS.Test.ps1
+Modules/PowerBIETL/Publish/*

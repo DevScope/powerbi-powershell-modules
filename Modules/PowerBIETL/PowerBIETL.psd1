@@ -4,7 +4,7 @@
 RootModule = 'PowerBIETL.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.2.0.7'
+ModuleVersion = '1.2.0.8'
 
 # ID used to uniquely identify this module
 GUID = '80052B99-2AB5-4F9D-842A-03E16B10697D'
@@ -59,7 +59,7 @@ Description = 'A developer tool to quickly load a SQL Database using PowerBIDesk
 
 # Functions to export from this module
 FunctionsToExport = @(
-	"Export-PBIDesktopToSQL"
+	"Export-PBIDesktopToSQL", "Get-PBIDesktopTCPPort"
 )
 
 # Cmdlets to export from this module

@@ -9,4 +9,8 @@ Import-Module "$currentPath\..\PowerBIPS.psm1" -Force
 # Get the authentication token using ADAL library (OAuth)
 $authToken = Get-PBIAuthToken -clientId "7a7be4f7-c64d-41da-94db-7fb8200f029c"
 
+$authToken
+
 $ds = Get-PBIDataSet -authToken $authToken
+
+$ds

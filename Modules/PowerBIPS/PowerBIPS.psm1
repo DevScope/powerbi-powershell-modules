@@ -461,7 +461,7 @@ Function Get-PBIDataSet{
 		
 		$result = Invoke-RestMethod -Uri "$url/$id" -Headers $headers -Method Get 
 		
-		$result | Add-Member -MemberType NoteProperty -Name "id" -Value $id
+		# $result | Add-Member -MemberType NoteProperty -Name "id" -Value $id
 		
 		$dataSets = @($result)		
 	}
@@ -1189,7 +1189,7 @@ Function Get-PowerBIRequestUrl{
 	[CmdletBinding()]	
 	param(													
 		[Parameter(Mandatory=$true)] [string] $scope,		
-		[Parameter(Mandatory=$false)] [switch] $beta = $false,	
+		[Parameter(Mandatory=$false)] [switch] $beta = $true,	
 		[Parameter(Mandatory=$false)] [switch] $ignoreGroup = $false	
 	)
 			
