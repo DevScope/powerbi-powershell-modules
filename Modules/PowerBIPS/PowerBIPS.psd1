@@ -4,7 +4,7 @@
 RootModule = 'PowerBIPS.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.2.0.8'
+ModuleVersion = '1.2.0.9'
 
 # ID used to uniquely identify this module
 GUID = '163A1640-A4F2-4B1F-A3AF-2796AD56200B'
