@@ -100,8 +100,6 @@ Function Get-PBIAuthToken
         $ForceAskCredentials = $false
     )
 
-   
-
     if ($Script:AuthContext -eq $null)
     {
         Write-Verbose -Message 'Creating new AuthenticationContext object'
@@ -171,52 +169,69 @@ Function Set-PBIGroup{
 }
 
 Function Get-PBIReport{
-<#
-.SYNOPSIS    
-	Gets all the PowerBI existing reports and returns as an array of custom objects.
+	<#
+	.SYNOPSIS    
+		Gets all the PowerBI existing reports and returns as an array of custom objects.
 		
-.EXAMPLE
+	.EXAMPLE	
+		Get-PBIReport -authToken $authToken	
+	.EXAMPLE
+		Get-PBIReport -authToken $authToken	-id $id
+	
+	#>
+		[CmdletBinding()]		
+		param(									
+			[Parameter(Mandatory=$false)] [string] $authToken,
+			[Parameter(Mandatory=$false)] [string] $name,
+			[Parameter(Mandatory=$false)] [string] $id		
+		)
+		
+		$authToken = Resolve-PowerBIAuthToken $authToken
+	
+		$headers = Get-PowerBIRequestHeader $authToken
+	
+		Write-Verbose "Getting Reports"
+		
+		$result = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports" -beta) -Headers $headers -Method Get 
+		
+		$reports = $result.value
+		
+		Write-Verbose "Found $($reports.count) reports."
+		
+		if (-not [string]::IsNullOrEmpty($id))
+		{
+			Write-Verbose "Searching for the report '$id'"		
 			
-		Get-PBIReport -authToken $authToken		
-
-#>
-	[CmdletBinding()]		
-	param(									
-		[Parameter(Mandatory=$false)] [string] $authToken,
-		[Parameter(Mandatory=$false)] [string] $name,
-		[Parameter(Mandatory=$false)] [string] $id		
-	)
-	
-	$authToken = Resolve-PowerBIAuthToken $authToken
-
-	$headers = Get-PowerBIRequestHeader $authToken
-
-	Write-Verbose "Getting Reports"
-	
-	$result = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports" -beta) -Headers $headers -Method Get 
-	
-	$reports = $result.value
-	
-	Write-Verbose "Found $($reports.count) groups."			
-	
-	if (-not [string]::IsNullOrEmpty($name))
-	{
-		Write-Verbose "Searching for the dashboard '$name'"		
-		
-		$reports = @($reports |? name -eq $name)
-		
-		if ($reports.Count -ne 0)
-		{
-			Write-Verbose "Found report with name: '$name'"				
+			$reports = @($reports |? name -eq $name)
+			
+			if ($reports.Count -ne 0)
+			{
+				Write-Verbose "Found report with id: '$id'"				
+			}
+			else
+			{
+				throw "Cannot find report with id: '$id'"			
+			}				
 		}
-		else
-		{
-			throw "Cannot find report with name: '$name'"			
-		}				
-	}	
-
-	Write-Output $reports
-}
+		else{
+			if (-not [string]::IsNullOrEmpty($name))
+			{
+				Write-Verbose "Searching for the report '$name'"		
+				
+				$reports = @($reports |? name -eq $name)
+				
+				if ($reports.Count -ne 0)
+				{
+					Write-Verbose "Found report with name: '$name'"				
+				}
+				else
+				{
+					throw "Cannot find report with name: '$name'"			
+				}				
+			}
+		}
+		Write-Output $reports
+	}
 
 Function Get-PBIDashboard{
 <#
@@ -314,7 +329,7 @@ Function Get-PBIDashboardTile{
 
 Function Get-PBIGroup{
 <#
-.SYNOPSIS    
+.SYNOPSIS 
 	Gets all the PowerBI existing groups and returns as an array of custom objects.
 		
 .EXAMPLE
@@ -358,6 +373,44 @@ Function Get-PBIGroup{
 	}	
 
 	Write-Output $groups
+}
+
+Function Get-PBIGroupUsers{
+<#
+.SYNOPSIS    
+	Gets users that are members of a specific workspace (group) and returns as an array of custom objects.
+	Must use Set-PBIGroup first to set the group.
+		
+.EXAMPLE
+	Get-PBIGroupUsers -authToken $authToken		
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken	
+	)
+
+	$groupId = $script:pbiGroupId
+
+	if ([string]::IsNullOrEmpty($groupId))
+	{
+		throw "No group setted. Use Set-PBIGroup first to set the group."
+	}
+	else
+	{	
+		$authToken = Resolve-PowerBIAuthToken $authToken
+
+		$headers = Get-PowerBIRequestHeader $authToken
+
+		Write-Verbose "Getting Users"
+		
+		$users = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "users") -Headers $headers -Method Get 
+		
+		Write-Verbose "Found $($users.count) users."
+		
+		Write-Output $users.value
+	}
+
 }
 
 Function Get-PBIDataSet{
@@ -1159,6 +1212,281 @@ Function Import-PBIFile{
 	Write-Output $result
 }
 
+Function Export-PBIReport{
+<#
+.SYNOPSIS    
+	Download reports as PBIX files to the specified folder.
+
+.EXAMPLE
+	Export-PBIReport -authToken $authToken -reports $reports -destinationFolder $destinationFolder
+
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+
+.PARAMETER Reports
+	An array of strings with the report IDs or Names to download
+
+.PARAMETER destinationFolder
+	A string with the path to the destination folder
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string[]] $reports,
+		[Parameter(Mandatory=$false)] [string] $destinationFolder = (Split-Path $MyInvocation.MyCommand.Definition -Parent)		
+	)
+	
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+	$AllReports = Get-PBIReport -authToken $authToken
+	
+	if (-not [string]::IsNullOrEmpty($reports))
+	{
+		$reports | Foreach-Object{
+
+			$reportIdOrName=$_
+
+			$report = @($AllReports | Where-Object {$_.id -eq $reportIdOrName -or $_.name -eq $reportIdOrName})
+			
+			if ($report.Count -ne 0)
+			{
+				Write-Verbose "Downloading report '$($report.name)' (id: $($report.id)) to $destinationFolder\$($report.name).pbix"
+				Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports/$($report.id)/Export") -Headers $headers -Method Get -OutFile "$destinationFolder\$($report.name).pbix"
+			}
+			else
+			{
+				throw "Cannot find report '$reportIdOrName'"			
+			}
+		}
+	}
+	else{
+		#download all reports
+		$AllReports | ForEach-Object{
+			Write-Verbose "Downloading report '$($_.name)' (id: $($_.id)) to $destinationFolder\$($_.name).pbix"
+			Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports/$($_.id)/Export") -Headers $headers -Method Get -OutFile "$destinationFolder\$($_.name).pbix"
+		}
+	}
+}
+
+Function Copy-PBIReports{
+<#
+.SYNOPSIS    
+	Duplicate reports by suppling a list of the reports to copy.
+	Returns an object containing the new reports' metadata.
+.EXAMPLE
+	Copy-PBIReport -authToken $authToken -reportsObj $reportsObj
+
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+
+.PARAMETER ReportsObj
+	An hashtable with the following structure:
+
+	$reports = @(
+				@{
+					originalReport = "Original Report"
+					targetName = "Copied Report"
+					targetWorkspace = "2073307d-3bed-4165-916e-ca0aa2b95ed9"
+					targetModel = "154f4378-b161-4e7e-a491-2523941d295c"
+				}
+			)
+	
+	originalReport - The id or name of the report to copy
+	targetName - The name of the new report
+	targetWorkspace - (Opcional) The id or name of the destination workspace. If not setted, the copy will be made to the actual workspace.
+	targetModel - (Opcional) The id or name of the dataset to bind the new report. Mandatory if targetWorkspaceId is setted.
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] $reportsObj
+	)
+	
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+	$reports = Get-PBIReport -authToken $authToken
+
+	$workspaces = Get-PBIGroup -authToken $authToken
+
+	if ($reportsObj)
+	{
+		$newReportsData=@()
+
+		$reportsObj | ForEach-Object{
+
+			$newReport = $_
+
+			$report = @($reports | Where-Object {$_.id -eq $newReport.originalReport -or $_.name -eq $newReport.originalReport})
+
+			if ($report.Count -ne 0)
+			{
+				$bodyObj = @{name=$_.targetName}
+
+				if ($_.targetWorkspace -and $_.targetModel){
+
+					$workspace = @($workspaces | Where-Object {$_.id -eq $newReport.targetWorkspace -or $_.name -eq $newReport.targetWorkspace})
+					if ($workspace.Count -ne 0)
+					{
+						$workspaceDatasets = Get-PBIGroupDatasets -authToken $authToken -groupId $workspace.id
+						$dataset = @($workspaceDatasets | Where-Object {$_.id -eq $newReport.targetModel -or $_.name -eq $newReport.targetModel})
+						if ($dataset.Count -ne 0){
+							$bodyObj.targetWorkspaceId = $workspace.id
+							$bodyObj.targetModelId = $dataset.id
+						}
+						else {
+							throw "Cannot find dataset '$($_.targetModel)'"
+						}
+					}
+					else
+					{
+						throw "Cannot find workspace '$($_.targetWorkspace)'"
+					}
+				}
+
+				$res = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports/$($report.id)/Clone") -Headers $headers -Method Post -Body ($bodyObj | ConvertTo-Json)
+
+				$newReportsData += $res
+			}
+			else
+			{
+				throw "Cannot find report '$($_.reportName)'"
+			}
+		}
+
+		Write-Output $newReportsData
+	}
+}
+
+Function Update-PBIDataset{
+<#
+.SYNOPSIS    
+	Refresh one or more datasets
+		
+.EXAMPLE
+	Export-PBIReport -authToken $authToken -datasets $datasets
+
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+
+.PARAMETER Datasets
+	An array of strings with the dataset IDs or Names to refresh
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string[]] $datasets
+	)
+	
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+	$dsets = Get-PBIDataSet -authToken $authToken
+	
+	if (-not [string]::IsNullOrEmpty($datasets))
+	{
+		$datasets | Foreach-Object{
+
+			$dsIdOrName=$_
+
+			$dataset = @($dsets | Where-Object {$_.id -eq $dsIdOrName -or $_.name -eq $dsIdOrName})
+			
+			if ($dataset.Count -ne 0)
+			{
+				Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "datasets/$($dataset.id)/refreshes") -Headers $headers -Method Post
+				Write-Verbose "Sent refresh command for dataset '$($dataset.name)' (id: $($dataset.id))"
+			}
+			else
+			{
+				throw "Cannot find dataset '$dsIdOrName'"			
+			}
+		}
+	}
+}
+
+Function Get-PBIDatasetRefreshHistory{
+<#
+.SYNOPSIS    
+	Get refresh history of one or more datasets
+		
+.EXAMPLE
+	Get-PBIDatasetRefreshHistory -authToken $authToken -datasets $datasets
+
+.PARAMETER AuthToken
+	The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+
+.PARAMETER Datasets
+	An array of strings with the dataset IDs or Names to get refresh history
+
+.PARAMETER Top
+	Limit the number of items returned by the top N
+
+#>
+	[CmdletBinding()]		
+	param(
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string[]] $datasets,
+		[Parameter(Mandatory=$false)] [int] $top
+	)
+	
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+	$dsets = Get-PBIDataSet -authToken $authToken
+
+	$dsHistory=@()
+
+	if (-not [string]::IsNullOrEmpty($datasets))
+	{
+		$datasets | Foreach-Object{
+
+			$dsIdOrName=$_
+
+			$dataset = @($dsets | Where-Object {$_.id -eq $dsIdOrName -or $_.name -eq $dsIdOrName})
+			
+			if ($dataset.Count -ne 0)
+			{
+				$uriScope="datasets/$($dataset.id)/refreshes"
+				if ($top){
+					$uriScope+="/?`$top=$top"
+				}
+				$res=Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope $uriScope) -Headers $headers -Method Get
+				$dsHistory += $res
+			}
+			else
+			{
+				throw "Cannot find dataset '$dsIdOrName'"			
+			}
+		}
+	}
+	else {
+		#get history of all datasets
+		$dsets | ForEach-Object{
+			$uriScope="datasets/$($_.id)/refreshes"
+			if ($top){
+				$uriScope+="/?`$top=$top"
+			}
+			$res=Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope $uriScope) -Headers $headers -Method Get
+			$dsHistory += $res
+		}
+	}
+
+	Write-Output $dsHistory
+}
+
+
 #Function Get-PBIModels{
 #	[CmdletBinding()]		
 #	param(									
@@ -1189,7 +1517,7 @@ Function Get-PowerBIRequestUrl{
 	[CmdletBinding()]	
 	param(													
 		[Parameter(Mandatory=$true)] [string] $scope,		
-		[Parameter(Mandatory=$false)] [switch] $beta = $true,	
+		[Parameter(Mandatory=$false)] [switch] $beta,	
 		[Parameter(Mandatory=$false)] [switch] $ignoreGroup = $false	
 	)
 			
@@ -1255,7 +1583,7 @@ Function ConvertTo-PBIJson{
 		# Workaround to not have issues with DateTimes & ConvertTo-Json (http://stackoverflow.com/questions/26067906/format-a-datetime-in-powershell-to-json-as-date1411704000000)
 	
 		Write-Verbose "Changing dataset types"
-				
+		
 		$jsonObj = ConvertFrom-Json $jsonBody
 		
 		$tables = $jsonObj.tables
@@ -1503,6 +1831,18 @@ Function Resolve-GroupId($authToken, $groupId, $groupName)
 	}	
 	
 	return $groupId
+}
+
+function Get-PBIGroupDatasets ($authToken, $groupId) {
+	$actualGroupId = $script:pbiGroupId
+	try{
+		Set-PBIGroup -authToken $authToken -id $groupId
+		$datasets = Get-PBIDataSet -authToken $authToken
+	}
+	finally{
+		Set-PBIGroup -authToken $authToken -id $actualGroupId
+	}
+	return $datasets
 }
 
 
