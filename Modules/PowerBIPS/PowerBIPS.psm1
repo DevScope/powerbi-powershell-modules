@@ -1224,18 +1224,22 @@ Function Export-PBIReport{
     The authorization token required to comunicate with the PowerBI APIs
 	Use 'Get-PBIAuthToken' to get the authorization token string
 
-.PARAMETER Reports
-	An array of strings with the report IDs or Names to download
+.PARAMETER ReportIds
+	An array of strings with the report IDs to download
+
+.PARAMETER Reportnames
+	An array of strings with the report names to download
 
 .PARAMETER destinationFolder
 	A string with the path to the destination folder
 
 #>
-	[CmdletBinding()]		
+	[CmdletBinding()]
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
-		[Parameter(Mandatory=$false)] [string[]] $reports,
-		[Parameter(Mandatory=$false)] [string] $destinationFolder = (Split-Path $MyInvocation.MyCommand.Definition -Parent)		
+		[Parameter(Mandatory=$false)] [string[]] $reportIds,
+		[Parameter(Mandatory=$false)] [string[]] $reportNames,
+		[Parameter(Mandatory=$false)] [string] $destinationFolder = (Split-Path $MyInvocation.MyCommand.Definition -Parent)	
 	)
 	
 	$authToken = Resolve-PowerBIAuthToken $authToken
@@ -1243,14 +1247,22 @@ Function Export-PBIReport{
 	$headers = Get-PowerBIRequestHeader $authToken
 
 	$AllReports = Get-PBIReport -authToken $authToken
+
+	if (-not [string]::IsNullOrEmpty($reportNames)){
+		$reportNames | Foreach-Object{
+			$report = @($AllReports | Where-Object name -eq $_)
+			if ($report.Count -ne 0)
+			{
+				$reportIds+=$report.id
+			}
+		}
+	}
 	
-	if (-not [string]::IsNullOrEmpty($reports))
+	if (-not [string]::IsNullOrEmpty($reportIds))
 	{
-		$reports | Foreach-Object{
+		$reportIds | Foreach-Object{
 
-			$reportIdOrName=$_
-
-			$report = @($AllReports | Where-Object {$_.id -eq $reportIdOrName -or $_.name -eq $reportIdOrName})
+			$report = @($AllReports | Where-Object id -eq $_)
 			
 			if ($report.Count -ne 0)
 			{
@@ -1259,7 +1271,7 @@ Function Export-PBIReport{
 			}
 			else
 			{
-				throw "Cannot find report '$reportIdOrName'"			
+				throw "Cannot find report '$_'"			
 			}
 		}
 	}
@@ -1289,17 +1301,26 @@ Function Copy-PBIReports{
 
 	$reports = @(
 				@{
-					originalReport = "Original Report"
+					originalReportId = "7b32b78f-6336-4a2d-9b68-47w783f6c74e"
 					targetName = "Copied Report"
-					targetWorkspace = "2073307d-3bed-4165-916e-ca0aa2b95ed9"
-					targetModel = "154f4378-b161-4e7e-a491-2523941d295c"
+					targetWorkspaceId = "2073317d-3bed-4165-916e-ca0aa2b95ed9"
+					targetModelId = "154f4378-b161-4a7e-a491-2523941d295c"
+				}
+			)
+	or
+	$reports = @(
+				@{
+					originalReportName = "Original Report"
+					targetName = "Copied Report"
+					targetWorkspaceName = "Some Workspace"
+					targetModelName = "Some Dataset"
 				}
 			)
 	
-	originalReport - The id or name of the report to copy
-	targetName - The name of the new report
-	targetWorkspace - (Opcional) The id or name of the destination workspace. If not setted, the copy will be made to the actual workspace.
-	targetModel - (Opcional) The id or name of the dataset to bind the new report. Mandatory if targetWorkspaceId is setted.
+	originalReportId or originalReportName - The id or name of the report to copy
+	targetName - (Opcional) The name of the new report. If not setted,it will use the same name as the original report.
+	targetWorkspaceId or targetWorkspaceName- (Opcional) The id or name of the destination workspace. If not setted, the copy will be made to the actual workspace.
+	targetModelId or targetWorkspaceName - (Opcional) The id or name of the dataset to bind the new report. Mandatory if targetWorkspaceId or targetWorkspaceName is setted.
 
 #>
 	[CmdletBinding()]		
@@ -1316,6 +1337,8 @@ Function Copy-PBIReports{
 
 	$workspaces = Get-PBIGroup -authToken $authToken
 
+	$reportsObjIds = @()
+
 	if ($reportsObj)
 	{
 		$newReportsData=@()
@@ -1324,19 +1347,26 @@ Function Copy-PBIReports{
 
 			$newReport = $_
 
-			$report = @($reports | Where-Object {$_.id -eq $newReport.originalReport -or $_.name -eq $newReport.originalReport})
-
+			$report = Find-ByIdOrName -items $reports -id $_.originalReportId -name $_.originalReportName
+			
 			if ($report.Count -ne 0)
 			{
-				$bodyObj = @{name=$_.targetName}
+				if (-not [string]::IsNullOrEmpty($_.targetName)){
+					$bodyObj = @{name=$_.targetName}
+				}
+				else{
+					$bodyObj = @{name=$report.name}
+				}
 
-				if ($_.targetWorkspace -and $_.targetModel){
+				if (($_.targetWorkspaceId -or $_.targetWorkspaceName) -and ($_.targetModelId -or $_.targetModelName)){
 
-					$workspace = @($workspaces | Where-Object {$_.id -eq $newReport.targetWorkspace -or $_.name -eq $newReport.targetWorkspace})
+					$workspace = Find-ByIdOrName -items $workspaces -id $_.targetWorkspaceId -name $_.targetWorkspaceName
+					
 					if ($workspace.Count -ne 0)
 					{
 						$workspaceDatasets = Get-PBIGroupDatasets -authToken $authToken -groupId $workspace.id
-						$dataset = @($workspaceDatasets | Where-Object {$_.id -eq $newReport.targetModel -or $_.name -eq $newReport.targetModel})
+						$dataset = Find-ByIdOrName -items $workspaceDatasets -id $_.targetModelId -name $_.targetModelName
+
 						if ($dataset.Count -ne 0){
 							$bodyObj.targetWorkspaceId = $workspace.id
 							$bodyObj.targetModelId = $dataset.id
@@ -1377,14 +1407,18 @@ Function Update-PBIDataset{
     The authorization token required to comunicate with the PowerBI APIs
 	Use 'Get-PBIAuthToken' to get the authorization token string
 
-.PARAMETER Datasets
-	An array of strings with the dataset IDs or Names to refresh
+.PARAMETER DatasetIds
+	An array of strings with the dataset IDs to refresh
+
+.PARAMETER DatasetNames
+	An array of strings with the dataset names to refresh
 
 #>
 	[CmdletBinding()]		
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
-		[Parameter(Mandatory=$false)] [string[]] $datasets
+		[Parameter(Mandatory=$false)] [string[]] $datasetIds,
+		[Parameter(Mandatory=$false)] [string[]] $datasetNames
 	)
 	
 	$authToken = Resolve-PowerBIAuthToken $authToken
@@ -1392,14 +1426,23 @@ Function Update-PBIDataset{
 	$headers = Get-PowerBIRequestHeader $authToken
 
 	$dsets = Get-PBIDataSet -authToken $authToken
-	
-	if (-not [string]::IsNullOrEmpty($datasets))
+
+	if (-not [string]::IsNullOrEmpty($datasetNames))
 	{
-		$datasets | Foreach-Object{
+		$datasetNames | Foreach-Object{
+			$dset = @($dsets | Where-Object name -eq $_)
+			if ($dset.Count -ne 0)
+			{
+				$datasetIds+=$dset.id
+			}
+		}
+	}
+	
+	if (-not [string]::IsNullOrEmpty($datasetIds))
+	{
+		$datasetIds | Foreach-Object{
 
-			$dsIdOrName=$_
-
-			$dataset = @($dsets | Where-Object {$_.id -eq $dsIdOrName -or $_.name -eq $dsIdOrName})
+			$dataset = @($dsets | Where-Object id -eq $_)
 			
 			if ($dataset.Count -ne 0)
 			{
@@ -1408,7 +1451,7 @@ Function Update-PBIDataset{
 			}
 			else
 			{
-				throw "Cannot find dataset '$dsIdOrName'"			
+				throw "Cannot find dataset '$_'"
 			}
 		}
 	}
@@ -1426,8 +1469,11 @@ Function Get-PBIDatasetRefreshHistory{
 	The authorization token required to comunicate with the PowerBI APIs
 	Use 'Get-PBIAuthToken' to get the authorization token string
 
-.PARAMETER Datasets
-	An array of strings with the dataset IDs or Names to get refresh history
+.PARAMETER DatasetIds
+	An array of strings with the dataset IDs to get refresh history
+
+.PARAMETER DatasetNames
+	An array of strings with the dataset names to get refresh history
 
 .PARAMETER Top
 	Limit the number of items returned by the top N
@@ -1436,7 +1482,8 @@ Function Get-PBIDatasetRefreshHistory{
 	[CmdletBinding()]		
 	param(
 		[Parameter(Mandatory=$false)] [string] $authToken,
-		[Parameter(Mandatory=$false)] [string[]] $datasets,
+		[Parameter(Mandatory=$false)] [string[]] $datasetIds,
+		[Parameter(Mandatory=$false)] [string[]] $datasetNames,
 		[Parameter(Mandatory=$false)] [int] $top
 	)
 	
@@ -1448,9 +1495,20 @@ Function Get-PBIDatasetRefreshHistory{
 
 	$dsHistory=@()
 
-	if (-not [string]::IsNullOrEmpty($datasets))
+	if (-not [string]::IsNullOrEmpty($datasetNames))
 	{
-		$datasets | Foreach-Object{
+		$datasetNames | Foreach-Object{
+			$dset = @($dsets | Where-Object name -eq $_)
+			if ($dset.Count -ne 0)
+			{
+				$datasetIds+=$dset.id
+			}
+		}
+	}
+
+	if (-not [string]::IsNullOrEmpty($datasetIds))
+	{
+		$datasetIds | Foreach-Object{
 
 			$dsIdOrName=$_
 
@@ -1845,6 +1903,19 @@ function Get-PBIGroupDatasets ($authToken, $groupId) {
 	return $datasets
 }
 
+function Find-ByIdOrName ($items, $id, $name) {
 
+	$item=@()
+	if (-not [string]::IsNullOrEmpty($id)){
+		$item += @($items | Where-Object id -eq $id)
+	}
+	else{
+		if (-not [string]::IsNullOrEmpty($name)){
+			$item += @($items | Where-Object name -eq $name)
+		}
+	}
+
+	return $item
+}
 
 #endregion
