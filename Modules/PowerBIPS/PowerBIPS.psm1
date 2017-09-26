@@ -1239,7 +1239,8 @@ Function Export-PBIReport{
 		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$false)] [string[]] $reportIds,
 		[Parameter(Mandatory=$false)] [string[]] $reportNames,
-		[Parameter(Mandatory=$false)] [string] $destinationFolder = (Split-Path $MyInvocation.MyCommand.Definition -Parent)	
+		[Parameter(Mandatory=$false)] [string] $destinationFolder = (Split-Path $MyInvocation.MyCommand.Definition -Parent),
+		[Parameter(Mandatory=$false)] [int] $timeout = 300
 	)
 	
 	$authToken = Resolve-PowerBIAuthToken $authToken
@@ -1267,7 +1268,7 @@ Function Export-PBIReport{
 			if ($report.Count -ne 0)
 			{
 				Write-Verbose "Downloading report '$($report.name)' (id: $($report.id)) to $destinationFolder\$($report.name).pbix"
-				Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports/$($report.id)/Export") -Headers $headers -Method Get -OutFile "$destinationFolder\$($report.name).pbix"
+				Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports/$($report.id)/Export") -Headers $headers -Method Get -TimeoutSec $timeout -OutFile "$destinationFolder\$($report.name).pbix"
 			}
 			else
 			{
@@ -1279,7 +1280,7 @@ Function Export-PBIReport{
 		#download all reports
 		$AllReports | ForEach-Object{
 			Write-Verbose "Downloading report '$($_.name)' (id: $($_.id)) to $destinationFolder\$($_.name).pbix"
-			Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports/$($_.id)/Export") -Headers $headers -Method Get -OutFile "$destinationFolder\$($_.name).pbix"
+			Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports/$($_.id)/Export") -Headers $headers -Method Get -TimeoutSec $timeout -OutFile "$destinationFolder\$($_.name).pbix"
 		}
 	}
 }
