@@ -35,7 +35,7 @@ THE SOFTWARE.
 $pbiAuthorityUrl = "https://login.microsoftonline.com/common/oauth2/authorize"
 $pbiResourceUrl = "https://analysis.windows.net/powerbi/api"
 $pbiDefaultAuthRedirectUri = "https://login.live.com/oauth20_desktop.srf"
-$pbiDefaultClientId = "d57ac8af-1019-431d-8fed-5fd8db180388"
+$pbiDefaultClientId = "053e0da1-7eb4-4b9a-aa07-6f41d0f35cef"
 
 $script:pbiGroupId = $null
 
@@ -134,7 +134,7 @@ Function Get-PBIAuthToken
 Function Set-PBIGroup{
 <#
 .SYNOPSIS
-   Set's the scope to the group specified, after execution all the following PowerBIPS cmdlets will execute over the setted group.		
+   Set's the scope to the group specified, after execution all the following PowerBIPS cmdlets will execute over the setted group.
 
 .PARAMETER AuthToken
     The authorization token required to communicate with the PowerBI APIs
