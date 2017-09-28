@@ -5,6 +5,6 @@ UpgradeLog.htm
 Modules/.vs/config/applicationhost.config
 Modules/PowerBIPS/PublishToGallery.ps1
 Modules/PowerBIPS/Publish/*
-Modules/PowerBIPS/PowerBIPS.Test.ps1
+Modules/PowerBIPS/PowerBIPS.Test*
 Modules/PowerBIETL/Publish/*
 Modules/PowerBIETL/PublishToGallery.ps1
