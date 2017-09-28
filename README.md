@@ -194,6 +194,18 @@ Set-PBIGroup -clear
 
 ```
 
+## <a name="GetPBIGroupUsers"></a>Get-PBIGroupUsers - Gets the users that are members of a group
+
+```powershell
+
+$authToken = Get-PBIAuthToken
+
+Set-PBIGroup -authToken $authToken -name "Sales"
+
+Get-PBIGroupUsers -authToken $authToken
+
+```
+
 ## <a name="GetPBIDataSet"></a>Get-PBIDataSet - Get a DataSet or a List of DataSets
 
 ```powershell
@@ -338,7 +350,7 @@ $reports = Get-PBIReport
 
 ```
 
-## <a name="ExportPBIReport"></a>Get-PBIReport - Download reports as PBIX files
+## <a name="ExportPBIReport"></a>Export-PBIReport - Download reports as PBIX files
 
 ```powershell
 
