@@ -27,15 +27,24 @@ Cmdlets present in the module:
 |----------|:--------------|
 | [Out-PowerBI](#OutPowerBI) |  The most easy way for you to send data into PowerBI |
 | [Get-PBIAuthToken](#GetPBIAuthToken) |  Gets the authentication token required to communicate with the PowerBI APIs |
+| [Set-PBIGroup](#SetPBIGroup) |  Set's the scope to the group specified. Most of PowerBIPS cmdlets will execute over the setted group. |
 | [Get-PBIGroup](#GetPBIGroup) |  Gets the PowerBI groups in the user workspace |
+| [Get-PBIGroupUsers](#GetPBIGroupUsers) |  Gets the users that are members of a group |
 | [New-PBIDataSet](#NewPBIDataSet) |    Create a new DataSet   |
 | [Add-PBITableRows](#AddPBITableRows) | Add's a collection of rows into a powerbi dataset table in batches |
 | [Get-PBIDataSet](#GetPBIDataSet) | Gets a DataSet collection, includes definition and tables |
 | [Test-PBIDataSet](#TestPBIDataSet) |  Test the existence of a DataSet by name |
+| [Update-PBIDataset](#UpdatePBIDataSet) |  Send command to refresh one or more datasets |
+| [Get-PBIDatasetRefreshHistory](#GetPBIDataSetRefreshHistory) |  Get refresh history of one or more datasets |
 | [Clear-PBITableRows](#ClearPBITableRows) |  Delete all the rows of a PowerBI dataset table |
 | [Update-PBITableSchema](#UpdatePBITableSchema) |  Updates a table schema |
-| [Get-PBIDashboard](#GetPBIDashboard) | Gets a Dashboard collection
-| [Get-PBIDashboardTile](#GetPBIDashboardTile) | Gets a Tile collection from a dashboard
+| [Get-PBIDashboard](#GetPBIDashboard) | Gets a Dashboard collection |
+| [Get-PBIDashboardTile](#GetPBIDashboardTile) | Gets a Tile collection from a dashboard |
+| [Get-PBIReport](#GetPBIReport) | Gets a Report collection |
+| [Export-PBIReport](#ExportPBIReport) | Download reports as PBIX files |
+| [Copy-PBIReports](#CopyPBIReports) | Duplicate reports by suppling a list of the reports to copy |
+
+
 
 For a better experience please copy this module on your UserProfile directory:
 * %USERPROFILE%\Documents\WindowsPowershell\Modules\PowerBIPS
@@ -162,6 +171,17 @@ $authToken = Get-PBIAuthToken
 
 $group = Get-PBIGroup -authToken $authToken -name "SalesGroup"
 
+
+```
+
+## <a name="SetPBIGroup"></a>Set-PBIGroup - Set's the scope to the group specified. Most of PowerBIPS cmdlets will execute over the setted group.
+
+```powershell
+
+$authToken = Get-PBIAuthToken
+
+$group = Get-PBIGroup -authToken $authToken -name "SalesGroup"
+
 # Gets the datasets of the group
 
 Set-PBIGroup -id $group.id
@@ -171,6 +191,18 @@ $dataSetsOfGroup = Get-PBIDataSet -authToken $authToken
 # Clear the group and all the requests now are for the default workspace
 
 Set-PBIGroup -clear
+
+```
+
+## <a name="GetPBIGroupUsers"></a>Get-PBIGroupUsers - Gets the users that are members of a group
+
+```powershell
+
+$authToken = Get-PBIAuthToken
+
+Set-PBIGroup -authToken $authToken -name "Sales"
+
+Get-PBIGroupUsers -authToken $authToken
 
 ```
 
@@ -201,6 +233,31 @@ else
 {
 	Write-Host "false"
 }
+
+```
+
+## <a name="UpdatePBIDataSet"></a>Update-PBIDataset - Send command to refresh one or more datasets
+
+```powershell
+
+$authToken = Get-PBIAuthToken
+
+Set-PBIGroup -authToken $authToken -name "Sales"
+
+Update-PBIDataset -authToken $authToken -datasetNames "Dataset1", "Dataset2"
+
+```
+
+## <a name="GetPBIDataSetRefreshHistory"></a>Get-PBIDataSetRefreshHistory - Get refresh history of one or more datasets
+
+```powershell
+
+$authToken = Get-PBIAuthToken
+
+Set-PBIGroup -authToken $authToken -name "Sales"
+
+$hist=Get-PBIDataSetRefreshHistory -authToken $authToken -top 10 -datasetNames "Dataset1"
+$hist.value
 
 ```
 
@@ -282,5 +339,54 @@ $dashboards = Get-PBIDashboard
 ```powershell
 
 $tiles = Get-PBIDashboardTile -dashboardId "XXX-XXX-XXX" 
+
+```
+
+## <a name="GetPBIReport"></a>Get-PBIReport - Gets a Report collection
+
+```powershell
+
+$reports = Get-PBIReport 
+
+```
+
+## <a name="ExportPBIReport"></a>Export-PBIReport - Download reports as PBIX files
+
+```powershell
+
+$authToken = Get-PBIAuthToken
+
+Set-PBIGroup -authToken $authToken -name "Sales"
+
+Export-PBIReport -authToken $authToken -reportNames "Report1","Report2" -destinationFolder "C:\Reports"
+
+```
+
+## <a name="CopyPBIReports"></a>Copy-PBIReports - Duplicate reports by suppling a list of the reports to copy
+
+```powershell
+
+$authToken = Get-PBIAuthToken
+
+Set-PBIGroup -authToken $authToken -name "Sales"
+
+$reports= @(
+    @{
+        originalReportId="2073307d-3bxd-4165-916e-ca0aa2b95ed9"
+        targetname="Copy of Report 1"
+        targetWorkspaceId="b8cd99e3-d453-49b9-abd5-b34aef41571c"
+        targetModelName="Dataset 1"
+    }
+    @{
+        originalReportName="Report 2"
+        targetname="Copy of Report 2"
+        targetWorkspaceName="Sales"
+        targetModelID="38d98386-31cf-4590-9a75-8701fb17ef16"
+    }
+)
+
+$newReportData = Copy-PBIReports -authToken $authToken -reportsObj $reports -Verbose
+
+$newReportData
 
 ```
