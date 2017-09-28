@@ -334,7 +334,7 @@ $tiles = Get-PBIDashboardTile -dashboardId "XXX-XXX-XXX"
 
 ```powershell
 
-$dashboards = Get-PBIReport 
+$reports = Get-PBIReport 
 
 ```
 
