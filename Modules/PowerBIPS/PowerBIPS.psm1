@@ -1654,6 +1654,29 @@ Function Get-PBIDataSetTables{
 	}
 }
 
+Function Get-PBIDatasources{
+<#
+.SYNOPSIS    
+	Gets DataSet connections
+		
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$true)] [string] $dataSetId
+	)
+	
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+    
+    $result = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "datasets/$dataSetId/dataSources") -Headers $headers -Method GET
+    
+    Write-Output $result.value			
+}
+
+
 Function ConvertTo-PBIJson{
 	param(		
 			$obj,

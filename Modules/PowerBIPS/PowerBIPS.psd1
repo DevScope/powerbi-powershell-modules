@@ -67,6 +67,7 @@ FunctionsToExport = @(
 	, "Get-PBIImports", "Import-PBIFile"
 	, "Get-PBIDashboard", "Get-PBIDashboardTile"
 	, "Get-PBIReport", "Export-PBIReport", "Copy-PBIReports"
+    , "Get-PBIDatasources"
 )
 
 # Cmdlets to export from this module
