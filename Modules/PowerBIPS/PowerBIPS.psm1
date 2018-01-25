@@ -98,7 +98,8 @@ Function Get-PBIAuthToken
         [Parameter(ParameterSetName = 'default')]
         [switch]
         $ForceAskCredentials = $false
-    )
+	)
+
 
     if ($Script:AuthContext -eq $null)
     {
@@ -111,7 +112,8 @@ Function Get-PBIAuthToken
     {
         Write-Verbose -Message 'Using username+password authentication flow'
 		
-		$UserCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.UserPasswordCredential($Credential.UserName, $Credential.Password)
+		#$UserCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.UserPasswordCredential($Credential.UserName, $Credential.Password)
+		$UserCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.UserCredential($Credential.UserName)
 		
         $AuthResult = [Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContextIntegratedAuthExtensions]::AcquireTokenAsync($script:AuthContext
         , $PbiResourceUrl
@@ -133,7 +135,7 @@ Function Get-PBIAuthToken
 		
 		$pltParams = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.PlatformParameters($promptBehavior)
 		
-		$authResult = $script:authContext.AcquireTokenAsync($PbiResourceUrl
+		$AuthResult = $script:authContext.AcquireTokenAsync($PbiResourceUrl
 			, $pbiDefaultClientId, [Uri]$pbiDefaultAuthRedirectUri
 			, $pltParams
 		).Result        
@@ -1421,6 +1423,97 @@ Function Copy-PBIReports{
 
 		Write-Output $newReportsData
 	}
+}
+
+Function Set-PBIReportsDataset{
+<#
+.SYNOPSIS    
+	Rebind reports to another dataset on the same workspace.
+
+.EXAMPLE
+	Set-PBIReportsDataset -authToken $authToken -reportNames $reportNames -datasetName $datasetName
+
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+
+.PARAMETER ReportIds
+	An array of strings with the report IDs to rebind
+
+.PARAMETER Reportnames
+	An array of strings with the report names to rebind
+
+.PARAMETER datasetId
+	A string with the new dataset id to bind the reports
+
+.PARAMETER datasetName
+	A string with the new dataset name to bind the reports
+
+#>
+	[CmdletBinding()]
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string[]] $reportIds,
+		[Parameter(Mandatory=$false)] [string[]] $reportNames,
+		[Parameter(Mandatory=$false)] [string] $datasetId,
+		[Parameter(Mandatory=$false)] [string] $datasetName,
+		[Parameter(Mandatory=$false)] [int] $timeout = 300
+	)
+	
+    $authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+    # Get all reports from the current workspace
+
+	$allReports = @(Get-PBIReport -authToken $authToken)
+
+    $reportsToProcess = $allReports
+	
+	# Filter the reports if the -reportIds or -reportNames is passed
+
+	if ($reportIds -ne $null -or $reportNames -ne $null){
+		$reportNames | Foreach-Object {
+			$rep = @($allReports | Where-Object name -eq $_)
+			if ($rep.Count -ne 0)
+			{
+				$reportIds+=$rep.id
+			}
+		}
+
+		$reportsToProcess = $allReports |? { $reportIds -contains $_.id }
+	}
+
+    # Rebind the reports
+
+    if ($reportsToProcess.Count -ne 0)
+    {
+        $workspaceDatasets = Get-PBIDataset -authToken $authToken
+		$dataset = Find-ByIdOrName -items $workspaceDatasets -id $datasetId -name $datasetName	
+
+        $reportsToProcess |% {
+		
+			$report = $_
+
+			if ($dataset.Count -ne 0){
+
+				Write-Verbose "Rebinding report '$($report.name)' (id: $($report.id)) to dataset $($dataset.name) (id: $($dataset.id))"
+
+				$bodyObj = @{datasetId=$dataset.id}
+
+				Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports/$($report.id)/Rebind") -Headers $headers -Method Post -Body ($bodyObj | ConvertTo-Json)
+
+				Write-Verbose "Report rebinded"
+			}
+			else {
+				throw "Cannot find dataset"
+			}
+        }
+    }
+    else
+    {
+        Write-Verbose "No reports to rebind"
+    }   
 }
 
 Function Update-PBIDataset{

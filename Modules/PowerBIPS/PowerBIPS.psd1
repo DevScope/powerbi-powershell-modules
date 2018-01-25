@@ -43,7 +43,7 @@ Description = 'A lightweight powershell module with cmdlets to interact with Pow
 # RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
- RequiredAssemblies = @(".\Microsoft.IdentityModel.Clients.ActiveDirectory.dll")
+ RequiredAssemblies = @(".\Microsoft.IdentityModel.Clients.ActiveDirectory.dll", "Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll")
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 # ScriptsToProcess = @()
@@ -66,7 +66,7 @@ FunctionsToExport = @(
 	, "Add-PBITableRows", "Clear-PBITableRows", "Update-PBITableSchema"	
 	, "Get-PBIImports", "Import-PBIFile"
 	, "Get-PBIDashboard", "Get-PBIDashboardTile"
-	, "Get-PBIReport", "Export-PBIReport", "Copy-PBIReports"
+	, "Get-PBIReport", "Export-PBIReport", "Copy-PBIReports", "Set-PBIReportsDataset"
     , "Get-PBIDatasources"
 )
 
