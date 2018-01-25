@@ -4,7 +4,7 @@
 RootModule = 'PowerBIPS.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.2.1.0'
+ModuleVersion = '1.3.0.0'
 
 # ID used to uniquely identify this module
 GUID = '163A1640-A4F2-4B1F-A3AF-2796AD56200B'
@@ -43,7 +43,7 @@ Description = 'A lightweight powershell module with cmdlets to interact with Pow
 # RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
- RequiredAssemblies = @('Microsoft.IdentityModel.Clients.ActiveDirectory.dll')
+ RequiredAssemblies = @(".\Microsoft.IdentityModel.Clients.ActiveDirectory.dll")
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 # ScriptsToProcess = @()
@@ -67,6 +67,7 @@ FunctionsToExport = @(
 	, "Get-PBIImports", "Import-PBIFile"
 	, "Get-PBIDashboard", "Get-PBIDashboardTile"
 	, "Get-PBIReport", "Export-PBIReport", "Copy-PBIReports"
+    , "Get-PBIDatasources"
 )
 
 # Cmdlets to export from this module
@@ -82,7 +83,7 @@ AliasesToExport = '*'
 # ModuleList = @()
 
 # List of all files packaged with this module
-# FileList = @()
+FileList = @("Microsoft.IdentityModel.Clients.ActiveDirectory.dll", "Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll")
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{

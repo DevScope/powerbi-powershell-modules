@@ -30,6 +30,144 @@ THE SOFTWARE.
 
 #>
 
+
+Function Export-PBIDesktopToCSV
+{      
+    [CmdletBinding()]
+	param(		        
+        [Parameter(Mandatory = $true)]        
+		[string]
+        $pbiDesktopWindowName,
+		[Parameter(Mandatory = $false)]        
+		[string[]] $tables,
+		[Parameter(Mandatory = $true)]    
+		[string] $outputPath		
+      )
+        
+    $port = Get-PBIDesktopTCPPort $pbiDesktopWindowName
+	
+	$dataSource = "localhost:$port"
+	
+	Write-Verbose "Connecting into PBIDesktop TCP port: '$dataSource'"
+	
+	$ssasConnStr = "Provider=MSOLAP;data source=$dataSource;"
+	 	
+	$ssasDBId = (Invoke-SQLCommand -providerName "System.Data.OleDb" -connectionString $ssasConnStr `
+        -executeType "Query" -commandText "select DATABASE_ID from `$SYSTEM.DBSCHEMA_CATALOGS").Database_id
+
+	$ssasConnStr += "Initial Catalog=$ssasDBId"
+	
+	if ($tables -eq $null -or $tables.Count -eq 0)
+	{
+		$modelTables = Invoke-SQLCommand -providerName "System.Data.OleDb" -connectionString $ssasConnStr -executeType "Query" -commandText "select [Name] from `$SYSTEM.TMSCHEMA_TABLES where not [IsHidden]"
+		
+		$tables = $modelTables |% {$_.Name}
+	}
+
+    if (-not (Test-Path $outputPath))
+    {
+        [System.IO.Directory]::CreateDirectory($outputPath) | Out-Null
+    }
+		
+	$tables |% {
+    
+        try
+        {
+            
+		    $daxTableName = $_				
+		
+		    $sqlTableName = "[$sqlSchema].[$daxTableName]"
+		
+		    Write-Verbose "Moving data from '$daxTableName' into '$sqlTableName'"
+		
+		    $reader = Invoke-SQLCommand -providerName "System.Data.OleDb" -connectionString $ssasConnStr `
+			    -executeType "Reader" -commandText "EVALUATE('$daxTableName')" 
+		
+		    Write-Verbose "Copying data from into '$tableCsvPath'"
+  
+            $tableCsvPath = "$outputPath\$daxTableName.csv"
+
+            $textWriter = New-Object System.IO.StreamWriter($tableCsvPath, $false, [System.Text.Encoding]::UTF8)
+
+            $csvWriter = New-Object CsvHelper.CsvWriter($textWriter)
+       
+            $hasHeaderBeenWritten = $false;
+  
+            $csvWriter.Configuration.CultureInfo.NumberFormat.NumberDecimalSeparator="."
+
+            $rows=0
+
+            $fieldCount=0
+
+            if ($reader.Read())
+            {
+                $fieldCount=$reader.FieldCount
+
+                for ($fieldOrdinal = 0; $fieldOrdinal -lt $fieldCount; $fieldOrdinal++)
+                {
+                    $colName=$reader.GetName( $fieldOrdinal ).Replace("[","").Replace("]","")
+			        $csvWriter.WriteField( $colName );                 
+                }
+
+                $csvWriter.NextRecord();
+            
+                $rows++
+
+                for ($fieldOrdinal = 0; $fieldOrdinal -lt $fieldCount; $fieldOrdinal++)
+                {
+                    $fieldValue=$reader[$fieldOrdinal ];             
+                    $csvWriter.WriteField($fieldValue);                 
+                }
+
+                $csvWriter.NextRecord();
+
+                if($rows % 5000 -eq 0)
+                {
+                    Write-Verbose "Inserted $rows rows into '$tableCsvPath'... "
+                }
+                
+            }
+
+            Write-Verbose "Fields in dataset '$fieldCount'"
+
+            while($reader.Read())
+	        {
+                $rows++
+
+                for ($fieldOrdinal = 0; $fieldOrdinal -lt $fieldCount; $fieldOrdinal++)
+                {                    
+                    $fieldValue=$reader[$fieldOrdinal ];             
+                    $csvWriter.WriteField($fieldValue);                 
+                }
+
+                $csvWriter.NextRecord();
+
+                if($rows % 5000 -eq 0)
+                {
+                    Write-Verbose "Inserted $rows rows into '$tableCsvPath'... "
+                }
+
+            }             
+		
+	        Write-Verbose "Inserted $rows rows into '$tableCsvPath' "
+        }
+        finally
+        {                
+            if ($reader -ne $null)
+            {
+                $reader.Dispose()
+            }
+
+            if ($textWriter -ne $null)
+            {
+                $textWriter.Dispose()
+            }
+
+        }
+		
+	}        			
+}
+
 Function Export-PBIDesktopToSQL
 {      
     [CmdletBinding()]
@@ -70,20 +208,32 @@ Function Export-PBIDesktopToSQL
 		
 	$tables |% {
     
-		$daxTableName = $_				
+        try
+        {
+
+		    $daxTableName = $_				
 		
-		$sqlTableName = "[$sqlSchema].[$daxTableName]"
+		    $sqlTableName = "[$sqlSchema].[$daxTableName]"
 		
-		Write-Verbose "Moving data from '$daxTableName' into '$sqlTableName'"
+		    Write-Verbose "Moving data from '$daxTableName' into '$sqlTableName'"
 		
-		$reader = Invoke-SQLCommand -providerName "System.Data.OleDb" -connectionString $ssasConnStr `
-			-executeType "Reader" -commandText "EVALUATE('$daxTableName')" 
+		    $reader = Invoke-SQLCommand -providerName "System.Data.OleDb" -connectionString $ssasConnStr `
+			    -executeType "Reader" -commandText "EVALUATE('$daxTableName')" 
 		
-		$rowCount = Invoke-SQLBulkCopy -connectionString $sqlConnStr -tableName $sqlTableName -data @{reader=$reader} -Verbose
+		    $rowCount = Invoke-SQLBulkCopy -connectionString $sqlConnStr -tableName $sqlTableName -data @{reader=$reader} -Verbose
 		
-		Write-Verbose "Inserted $rowCount rows"
-		
+		    Write-Verbose "Inserted $rowCount rows"
+        
+        }
+        finally
+        {            
+            if ($reader -ne $null)
+            {
+                $reader.Dispose()
+            }
+        }		
 	}
+
 }
 
 Function Get-PBIDesktopTCPPort

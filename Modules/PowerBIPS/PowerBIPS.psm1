@@ -110,24 +110,37 @@ Function Get-PBIAuthToken
     if ($PSCmdlet.ParameterSetName -eq 'credential')
     {
         Write-Verbose -Message 'Using username+password authentication flow'
-        $UserCredential = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.UserCredential -ArgumentList ($Credential.UserName, $Credential.Password)
-        $AuthResult = $Script:AuthContext.AcquireToken($PbiResourceUrl,$ClientId, $UserCredential)
+		
+		$UserCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.UserPasswordCredential($Credential.UserName, $Credential.Password)
+		
+        $AuthResult = [Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContextIntegratedAuthExtensions]::AcquireTokenAsync($script:AuthContext
+        , $PbiResourceUrl
+		, $ClientId
+		, $UserCredential).Result
     }
     else
     {
-        Write-Verbose -Message 'Using default authentication flow'
+		Write-Verbose -Message 'Using default authentication flow'
+		
         if ($ForceAskCredentials)
         {
-            $PromptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Always
+            $promptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Always
         }
         else
         {
-            $PromptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Auto
-        }
-        $authResult = $script:authContext.AcquireToken($PbiResourceUrl,$ClientId, [Uri]$RedirectUri, $PromptBehavior)
+            $promptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Auto
+		}
+		
+		$pltParams = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.PlatformParameters($promptBehavior)
+		
+		$authResult = $script:authContext.AcquireTokenAsync($PbiResourceUrl
+			, $pbiDefaultClientId, [Uri]$pbiDefaultAuthRedirectUri
+			, $pltParams
+		).Result        
     }
 
-    Write-Verbose -Message "Authenticated as $($AuthResult.UserInfo.DisplayableId)"
+	Write-Verbose -Message "Authenticated as $($AuthResult.UserInfo.DisplayableId)"
+	
     $AuthResult.AccessToken
 }
 
@@ -1243,46 +1256,60 @@ Function Export-PBIReport{
 		[Parameter(Mandatory=$false)] [int] $timeout = 300
 	)
 	
-	$authToken = Resolve-PowerBIAuthToken $authToken
+    $authToken = Resolve-PowerBIAuthToken $authToken
 
 	$headers = Get-PowerBIRequestHeader $authToken
 
-	$AllReports = Get-PBIReport -authToken $authToken
+    # Get all reports from the current workspace
 
-	if (-not [string]::IsNullOrEmpty($reportNames)){
-		$reportNames | Foreach-Object{
-			$report = @($AllReports | Where-Object name -eq $_)
-			if ($report.Count -ne 0)
-			{
-				$reportIds+=$report.id
-			}
-		}
-	}
-	
-	if (-not [string]::IsNullOrEmpty($reportIds))
-	{
-		$reportIds | Foreach-Object{
+	$allReports = @(Get-PBIReport -authToken $authToken)
 
-			$report = @($AllReports | Where-Object id -eq $_)
-			
-			if ($report.Count -ne 0)
-			{
-				Write-Verbose "Downloading report '$($report.name)' (id: $($report.id)) to $destinationFolder\$($report.name).pbix"
-				Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports/$($report.id)/Export") -Headers $headers -Method Get -TimeoutSec $timeout -OutFile "$destinationFolder\$($report.name).pbix"
-			}
-			else
-			{
-				throw "Cannot find report '$_'"			
-			}
-		}
+    $reportsToProcess = $allReports
+
+    # Filter the reports if the -reportIds or -reportNames is passed
+
+    if ($reportIds -ne $null) {
+
+		$reportsToProcess = $reportsToProcess |? { $reportIds -contains $_.id }
+
 	}
-	else{
-		#download all reports
-		$AllReports | ForEach-Object{
-			Write-Verbose "Downloading report '$($_.name)' (id: $($_.id)) to $destinationFolder\$($_.name).pbix"
-			Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports/$($_.id)/Export") -Headers $headers -Method Get -TimeoutSec $timeout -OutFile "$destinationFolder\$($_.name).pbix"
-		}
-	}
+    elseif ($reportNames -ne $null) {
+
+		$reportsToProcess = $reportsToProcess |? { $reportNames -contains $_.name }
+	}    
+
+    # Export the reports
+
+    if ($reportsToProcess.Count -ne 0)
+    {
+         # Ensure the Output folder exists
+
+        if (-not (Test-Path $destinationFolder))
+        {
+            [System.IO.Directory]::CreateDirectory($destinationFolder) | Out-Null
+        }		
+
+        $reportsToProcess |% {
+            
+            try
+            {
+                $report = $_
+
+                Write-Verbose "Downloading report '$($report.name)' (id: $($report.id)) to $destinationFolder\$($report.name).pbix"
+
+		        Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports/$($report.id)/Export") -Headers $headers -Method Get -TimeoutSec $timeout -OutFile "$destinationFolder\$($report.name).pbix"
+            }
+            catch {
+                $error = $_.Exception
+
+                Write-Verbose "Error downloading report '$($report.name)': '$($_.Exception.Message)'"
+            }               				    
+        }
+    }
+    else
+    {
+        Write-Verbose "No reports to export"
+    }   
 }
 
 Function Copy-PBIReports{
@@ -1626,6 +1653,29 @@ Function Get-PBIDataSetTables{
 		Write-Warning "Cannot retrieve DataSet '$id' tables."
 	}
 }
+
+Function Get-PBIDatasources{
+<#
+.SYNOPSIS    
+	Gets DataSet connections
+		
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$true)] [string] $dataSetId
+	)
+	
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+    
+    $result = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "datasets/$dataSetId/dataSources") -Headers $headers -Method GET
+    
+    Write-Output $result.value			
+}
+
 
 Function ConvertTo-PBIJson{
 	param(		

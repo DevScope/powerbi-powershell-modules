@@ -4,7 +4,7 @@
 RootModule = 'PowerBIETL.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.2.0.8'
+ModuleVersion = '1.3.0.0'
 
 # ID used to uniquely identify this module
 GUID = '80052B99-2AB5-4F9D-842A-03E16B10697D'
@@ -43,7 +43,7 @@ Description = 'A developer tool to quickly load a SQL Database using PowerBIDesk
  RequiredModules = @("SQLHelper")
 
 # Assemblies that must be loaded prior to importing this module
-# RequiredAssemblies = @('Microsoft.IdentityModel.Clients.ActiveDirectory.dll')
+RequiredAssemblies = @(".\CsvHelper.dll")
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 # ScriptsToProcess = @()
@@ -59,7 +59,7 @@ Description = 'A developer tool to quickly load a SQL Database using PowerBIDesk
 
 # Functions to export from this module
 FunctionsToExport = @(
-	"Export-PBIDesktopToSQL", "Get-PBIDesktopTCPPort"
+	"Export-PBIDesktopToCSV", "Export-PBIDesktopToSQL", "Get-PBIDesktopTCPPort"
 )
 
 # Cmdlets to export from this module
@@ -75,7 +75,7 @@ AliasesToExport = '*'
 # ModuleList = @()
 
 # List of all files packaged with this module
-# FileList = @()
+FileList = @(".\CsvHelper.dll")
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{
