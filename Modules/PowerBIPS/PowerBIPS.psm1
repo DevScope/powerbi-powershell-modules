@@ -1191,7 +1191,7 @@ Function Import-PBIFile{
 
 	$headers = Get-PowerBIRequestHeader $authToken
 	
-	$fileName = [IO.Path]::GetFileName($filePath)
+	$fileName = [uri]::EscapeDataString([IO.Path]::GetFileName($filePath))
 	
 	if ([string]::IsNullOrEmpty($dataSetName))
 	{
@@ -1213,12 +1213,12 @@ Function Import-PBIFile{
     $LF = [System.Environment]::NewLine
 	
 	$bodyLines = (
-	    "--$boundary",
-	    "Content-Disposition: form-data; name=`"file0`"; filename=`"$fileName`"",
-		"Content-Type: application/x-zip-compressed$LF",		
-	    $fileEnc,
-	    "--$boundary--$LF"
-	    ) -join $LF
+		"--$boundary",
+		"Content-Disposition: form-data; name=`"file0`"; filename=`"$fileName`"; filename*=UTF-8''$fileName",
+		"Content-Type: application/x-zip-compressed$LF",
+		$fileEnc,
+		"--$boundary--$LF"
+	) -join $LF
 		
 	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -ContentType "multipart/form-data; boundary=--$boundary" -Body $bodyLines
 	
