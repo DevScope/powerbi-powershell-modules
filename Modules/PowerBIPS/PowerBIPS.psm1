@@ -1184,6 +1184,7 @@ Function Import-PBIFile{
 		[Parameter(Mandatory=$false)]
 		[ValidateSet("Abort","Overwrite","Ignore")]
 		[string]$nameConflict = "Ignore",
+		[Parameter(Mandatory=$false)] [string] $groupId,
 		[Parameter(Mandatory=$true)] [string]$filePath		
 	)
 	
@@ -1198,7 +1199,14 @@ Function Import-PBIFile{
 		$dataSetName = $fileName
 	}
 			
-	$url = Get-PowerBIRequestUrl -scope "imports?datasetDisplayName=$dataSetName&nameConflict=$nameConflict" -beta
+    $scope = "imports?datasetDisplayName=$dataSetName&nameConflict=$nameConflict"
+
+	if (-not [string]::IsNullOrEmpty($groupId))
+	{
+        $scope = "groups/$groupId/$scope";
+    }
+			
+	$url = Get-PowerBIRequestUrl -scope $scope -beta
 	
 	$boundary = [System.Guid]::NewGuid().ToString("N")   
 		
