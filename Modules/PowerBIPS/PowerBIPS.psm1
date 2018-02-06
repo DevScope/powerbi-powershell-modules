@@ -1604,15 +1604,15 @@ Function New-PBIGroup{
 
 	$headers = Get-PowerBIRequestHeader $authToken
 
-    $url = Get-PowerBIRequestUrl -scope "groups"
+	$url = Get-PowerBIRequestUrl -scope "groups"
 
-    $body = @{
-        name = $name
-    } | ConvertTo-Json
+	$body = @{
+		name = $name
+	} | ConvertTo-Json
 
-    $result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $body
+	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $body
 
-    Write-Output $result
+	Write-Output $result
 }
 
 Function New-PBIGroupUser{
@@ -1647,16 +1647,16 @@ Function New-PBIGroupUser{
 
 	$headers = Get-PowerBIRequestHeader $authToken
 
-    $url = Get-PowerBIRequestUrl -scope "groups/$groupId/users"
+	$url = Get-PowerBIRequestUrl -scope "groups/$groupId/users"
 
-    $body = @{
-        groupUserAccessRight = $groupUserAccessRight
-        emailAddress = $emailAddress
-    } | ConvertTo-Json
+	$body = @{
+		groupUserAccessRight = $groupUserAccessRight
+		emailAddress = $emailAddress
+	} | ConvertTo-Json
 
-    $result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $body
+	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $body
 
-    Write-Output $result
+	Write-Output $result
 }
 
 #Function Get-PBIModels{
