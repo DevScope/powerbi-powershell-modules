@@ -1580,6 +1580,40 @@ Function Get-PBIDatasetRefreshHistory{
 	Write-Output $dsHistory
 }
 
+Function New-PBIGroup{
+<#
+.SYNOPSIS
+    Create a new group
+.DESCRIPTION
+	Creates a new group (app workspace) in PowerBI
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.PARAMETER Name
+    The name of the group
+.EXAMPLE
+		New-PBIGroup -authToken $authToken -name "Name Of The New Group"
+#>
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$true)] $name
+	)
+
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+    $url = Get-PowerBIRequestUrl -scope "groups"
+
+    $body = @{
+        name = $name
+    } | ConvertTo-Json
+
+    $result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $body
+
+    Write-Output $result
+}
 
 #Function Get-PBIModels{
 #	[CmdletBinding()]		
