@@ -1136,16 +1136,24 @@ Function Get-PBIImports{
 <#
 .SYNOPSIS    
 	Gets all the PowerBI imports made by the user and returns as an array of custom objects.
-		
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.PARAMETER ImportId
+    The id of the import in PowerBI
+.PARAMETER GroupId
+    The id of the group in PowerBI
 .EXAMPLE
-			
 		Get-PBIImports -authToken $authToken		
 
+.EXAMPLE
+        Get-PBIImports -authToken $authToken -groupId $groupId
 #>
 	[CmdletBinding()]		
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
-		[Parameter(Mandatory=$false)] [string] $importId			
+		[Parameter(Mandatory=$false)] [string] $importId,
+		[Parameter(Mandatory=$false)] [string] $groupId
 	)
 	
 	$authToken = Resolve-PowerBIAuthToken $authToken
@@ -1160,6 +1168,11 @@ Function Get-PBIImports{
 	{
 		$scope = "imports/$importId"
 	}
+
+	if (-not [string]::IsNullOrEmpty($groupId))
+	{
+        $scope = "groups/$groupId/$scope";
+    }
 	
 	$url = Get-PowerBIRequestUrl -scope $scope -beta
 	
@@ -1174,7 +1187,6 @@ Function Get-PBIImports{
 		Write-Output $result
 	}
 }
-
 
 Function Import-PBIFile{
 	[CmdletBinding()]		
