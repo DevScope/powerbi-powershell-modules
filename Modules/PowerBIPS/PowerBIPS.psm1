@@ -1615,6 +1615,50 @@ Function New-PBIGroup{
     Write-Output $result
 }
 
+Function New-PBIGroupUser{
+<#
+.SYNOPSIS
+    Add a user to a group
+.DESCRIPTION
+	Adds a new user to an existing group (app workspace) in PowerBI
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.PARAMETER GroupId
+    The id of the group in PowerBI
+.PARAMETER EmailAddress
+    The email address of the user in your organisation that you want to add to the group
+.PARAMETER GroupUserAccessRight
+    The access right the user gets on the group
+.EXAMPLE
+		New-PBIGroupUser -authToken $authToken -groupId $groupId -emailAddress "someone@your-organisation.com"
+#>
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$true)] $groupId,
+        [Parameter(Mandatory=$true)] $emailAddress,
+		[Parameter(Mandatory=$false)]
+		[ValidateSet("Admin")]
+		[string]$groupUserAccessRight = "Admin"
+	)
+
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+    $url = Get-PowerBIRequestUrl -scope "groups/$groupId/users"
+
+    $body = @{
+        groupUserAccessRight = $groupUserAccessRight
+        emailAddress = $emailAddress
+    } | ConvertTo-Json
+
+    $result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $body
+
+    Write-Output $result
+}
+
 #Function Get-PBIModels{
 #	[CmdletBinding()]		
 #	param(									
