@@ -60,7 +60,7 @@ Description = 'A lightweight powershell module with cmdlets to interact with Pow
 # Functions to export from this module
 FunctionsToExport = @(
 	"Get-PBIAuthToken"
-	, "Set-PBIGroup", "Get-PBIGroup", "Get-PBIGroupUsers"
+	, "Set-PBIGroup", "Get-PBIGroup", "Get-PBIGroupUsers", "New-PBIGroup", "New-PBIGroupUser"
 	, "Out-PowerBI"	
 	, "Get-PBIDataSet", "Test-PBIDataSet", "New-PBIDataSet", "Update-PBIDataset", "Get-PBIDatasetRefreshHistory"
 	, "Add-PBITableRows", "Clear-PBITableRows", "Update-PBITableSchema"	
