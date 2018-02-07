@@ -4,7 +4,7 @@
 RootModule = 'PowerBIETL.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.3.0.0'
+ModuleVersion = '1.3.0.2'
 
 # ID used to uniquely identify this module
 GUID = '80052B99-2AB5-4F9D-842A-03E16B10697D'

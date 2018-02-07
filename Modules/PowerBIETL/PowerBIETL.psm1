@@ -59,7 +59,7 @@ Function Export-PBIDesktopToCSV
 	
 	if ($tables -eq $null -or $tables.Count -eq 0)
 	{
-		$modelTables = Invoke-SQLCommand -providerName "System.Data.OleDb" -connectionString $ssasConnStr -executeType "Query" -commandText "select [Name] from `$SYSTEM.TMSCHEMA_TABLES where not [IsHidden]"
+		$modelTables = Invoke-SQLCommand -providerName "System.Data.OleDb" -connectionString $ssasConnStr -executeType "Query" -commandText "select [Name] from `$SYSTEM.TMSCHEMA_TABLES"
 		
 		$tables = $modelTables |% {$_.Name}
 	}
@@ -201,7 +201,7 @@ Function Export-PBIDesktopToSQL
 	
 	if ($tables -eq $null -or $tables.Count -eq 0)
 	{
-		$modelTables = Invoke-SQLCommand -providerName "System.Data.OleDb" -connectionString $ssasConnStr -executeType "Query" -commandText "select [Name] from `$SYSTEM.TMSCHEMA_TABLES where not [IsHidden]"
+		$modelTables = Invoke-SQLCommand -providerName "System.Data.OleDb" -connectionString $ssasConnStr -executeType "Query" -commandText "select [Name] from `$SYSTEM.TMSCHEMA_TABLES"
 		
 		$tables = $modelTables |% {$_.Name}
 	}
@@ -259,7 +259,7 @@ Function Get-PBIDesktopTCPPort
 	
 	if ($matchedWindows.Count -eq 0)
 	{
-		throw "No PBIDesktop window that match '*$pbiDesktopWindowName*'"
+		throw "No PBIDesktop window that match '$pbiDesktopWindowName'"
 	}
 	
 	# Select the first match

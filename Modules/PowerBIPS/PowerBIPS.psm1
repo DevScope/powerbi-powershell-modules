@@ -1774,6 +1774,27 @@ Function Get-PBIDatasources{
     Write-Output $result.value			
 }
 
+Function Execute-PBIPost{
+<#
+.SYNOPSIS    
+	Gets DataSet connections
+		
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$true)] [string] $uri,
+        [Parameter(Mandatory=$true)] [string] $body
+	)
+	
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken   
+
+    Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope $uri) -Headers $headers -Method Post -Body ($body)
+    		
+}
 
 Function ConvertTo-PBIJson{
 	param(		
