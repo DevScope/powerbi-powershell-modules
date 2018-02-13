@@ -112,8 +112,7 @@ Function Get-PBIAuthToken
     {
         Write-Verbose -Message 'Using username+password authentication flow'
 		
-		#$UserCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.UserPasswordCredential($Credential.UserName, $Credential.Password)
-		$UserCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.UserCredential($Credential.UserName)
+		$UserCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.UserPasswordCredential($Credential.UserName, $Credential.Password)
 		
         $AuthResult = [Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContextIntegratedAuthExtensions]::AcquireTokenAsync($script:AuthContext
         , $PbiResourceUrl
