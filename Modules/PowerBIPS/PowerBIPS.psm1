@@ -1137,16 +1137,24 @@ Function Get-PBIImports{
 <#
 .SYNOPSIS    
 	Gets all the PowerBI imports made by the user and returns as an array of custom objects.
-		
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.PARAMETER ImportId
+    The id of the import in PowerBI
+.PARAMETER GroupId
+    The id of the group in PowerBI
 .EXAMPLE
-			
 		Get-PBIImports -authToken $authToken		
 
+.EXAMPLE
+        Get-PBIImports -authToken $authToken -groupId $groupId
 #>
 	[CmdletBinding()]		
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
-		[Parameter(Mandatory=$false)] [string] $importId			
+		[Parameter(Mandatory=$false)] [string] $importId,
+		[Parameter(Mandatory=$false)] [string] $groupId
 	)
 	
 	$authToken = Resolve-PowerBIAuthToken $authToken
@@ -1161,6 +1169,11 @@ Function Get-PBIImports{
 	{
 		$scope = "imports/$importId"
 	}
+
+	if (-not [string]::IsNullOrEmpty($groupId))
+	{
+        $scope = "groups/$groupId/$scope";
+    }
 	
 	$url = Get-PowerBIRequestUrl -scope $scope -beta
 	
@@ -1176,7 +1189,6 @@ Function Get-PBIImports{
 	}
 }
 
-
 Function Import-PBIFile{
 	[CmdletBinding()]		
 	param(		
@@ -1185,6 +1197,7 @@ Function Import-PBIFile{
 		[Parameter(Mandatory=$false)]
 		[ValidateSet("Abort","Overwrite","Ignore")]
 		[string]$nameConflict = "Ignore",
+		[Parameter(Mandatory=$false)] [string] $groupId,
 		[Parameter(Mandatory=$true)] [string]$filePath		
 	)
 	
@@ -1192,14 +1205,21 @@ Function Import-PBIFile{
 
 	$headers = Get-PowerBIRequestHeader $authToken
 	
-	$fileName = [IO.Path]::GetFileName($filePath)
+	$fileName = [uri]::EscapeDataString([IO.Path]::GetFileName($filePath))
 	
 	if ([string]::IsNullOrEmpty($dataSetName))
 	{
 		$dataSetName = $fileName
 	}
 			
-	$url = Get-PowerBIRequestUrl -scope "imports?datasetDisplayName=$dataSetName&nameConflict=$nameConflict" -beta
+    $scope = "imports?datasetDisplayName=$dataSetName&nameConflict=$nameConflict"
+
+	if (-not [string]::IsNullOrEmpty($groupId))
+	{
+        $scope = "groups/$groupId/$scope";
+    }
+			
+	$url = Get-PowerBIRequestUrl -scope $scope -beta
 	
 	$boundary = [System.Guid]::NewGuid().ToString("N")   
 		
@@ -1214,12 +1234,12 @@ Function Import-PBIFile{
     $LF = [System.Environment]::NewLine
 	
 	$bodyLines = (
-	    "--$boundary",
-	    "Content-Disposition: form-data; name=`"file0`"; filename=`"$fileName`"",
-		"Content-Type: application/x-zip-compressed$LF",		
-	    $fileEnc,
-	    "--$boundary--$LF"
-	    ) -join $LF
+		"--$boundary",
+		"Content-Disposition: form-data; name=`"file0`"; filename=`"$fileName`"; filename*=UTF-8''$fileName",
+		"Content-Type: application/x-zip-compressed$LF",
+		$fileEnc,
+		"--$boundary--$LF"
+	) -join $LF
 		
 	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -ContentType "multipart/form-data; boundary=--$boundary" -Body $bodyLines
 	
@@ -1664,6 +1684,84 @@ Function Get-PBIDatasetRefreshHistory{
 	Write-Output $dsHistory
 }
 
+Function New-PBIGroup{
+<#
+.SYNOPSIS
+    Create a new group
+.DESCRIPTION
+	Creates a new group (app workspace) in PowerBI
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.PARAMETER Name
+    The name of the group
+.EXAMPLE
+		New-PBIGroup -authToken $authToken -name "Name Of The New Group"
+#>
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$true)] $name
+	)
+
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+	$url = Get-PowerBIRequestUrl -scope "groups"
+
+	$body = @{
+		name = $name
+	} | ConvertTo-Json
+
+	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $body
+
+	Write-Output $result
+}
+
+Function New-PBIGroupUser{
+<#
+.SYNOPSIS
+    Add a user to a group
+.DESCRIPTION
+	Adds a new user to an existing group (app workspace) in PowerBI
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.PARAMETER GroupId
+    The id of the group in PowerBI
+.PARAMETER EmailAddress
+    The email address of the user in your organisation that you want to add to the group
+.PARAMETER GroupUserAccessRight
+    The access right the user gets on the group
+.EXAMPLE
+		New-PBIGroupUser -authToken $authToken -groupId $groupId -emailAddress "someone@your-organisation.com"
+#>
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$true)] $groupId,
+        [Parameter(Mandatory=$true)] $emailAddress,
+		[Parameter(Mandatory=$false)]
+		[ValidateSet("Admin")]
+		[string]$groupUserAccessRight = "Admin"
+	)
+
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+	$url = Get-PowerBIRequestUrl -scope "groups/$groupId/users"
+
+	$body = @{
+		groupUserAccessRight = $groupUserAccessRight
+		emailAddress = $emailAddress
+	} | ConvertTo-Json
+
+	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $body
+
+	Write-Output $result
+}
 
 #Function Get-PBIModels{
 #	[CmdletBinding()]		
@@ -1768,6 +1866,27 @@ Function Get-PBIDatasources{
     Write-Output $result.value			
 }
 
+Function Execute-PBIPost{
+<#
+.SYNOPSIS    
+	Gets DataSet connections
+		
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$true)] [string] $uri,
+        [Parameter(Mandatory=$true)] [string] $body
+	)
+	
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken   
+
+    Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope $uri) -Headers $headers -Method Post -Body ($body)
+    		
+}
 
 Function ConvertTo-PBIJson{
 	param(		
