@@ -391,7 +391,7 @@ $newReportData = Copy-PBIReports -authToken $authToken -reportsObj $reports -Ver
 $newReportData
 
 ```
-## <a name="#SetPBIReportsDataset"></a>#Set-PBIReportsDataset - Rebind reports to another dataset on the same workspace
+## <a name="SetPBIReportsDataset"></a>Set-PBIReportsDataset - Rebind reports to another dataset on the same workspace
 
 ```powershell
 
