@@ -11,3 +11,5 @@ Modules/PowerBIETL/PublishToGallery.ps1
 /Modules/PowerBIETL/Samples/Output
 /Modules/PowerBIPS/Samples/PowerBIPS.TestChangeConnection.ps1
 /.vs/slnx.sqlite
+/.vs
+ImportPBIStuff.ps1
