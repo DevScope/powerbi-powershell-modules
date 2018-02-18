@@ -43,6 +43,7 @@ Cmdlets present in the module:
 | [Get-PBIReport](#GetPBIReport) | Gets a Report collection |
 | [Export-PBIReport](#ExportPBIReport) | Download reports as PBIX files |
 | [Copy-PBIReports](#CopyPBIReports) | Duplicate reports by suppling a list of the reports to copy |
+| [Set-PBIReportsDataset](#SetPBIReportsDataset) | Rebind reports to another dataset on the same workspace |
 
 
 
@@ -388,5 +389,16 @@ $reports= @(
 $newReportData = Copy-PBIReports -authToken $authToken -reportsObj $reports -Verbose
 
 $newReportData
+
+```
+## <a name="SetPBIReportsDataset"></a>Set-PBIReportsDataset - Rebind reports to another dataset on the same workspace
+
+```powershell
+
+$authToken = Get-PBIAuthToken
+
+Set-PBIGroup -authToken $authToken -name "Sales"
+
+Set-PBIReportsDataset -authToken $authToken -reportNames "Report1","Report2" -datasetName "SalesDataset"
 
 ```
