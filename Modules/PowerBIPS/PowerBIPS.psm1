@@ -1474,8 +1474,10 @@ Function Set-PBIReportsDataset{
 		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$false)] [string[]] $reportIds,
 		[Parameter(Mandatory=$false)] [string[]] $reportNames,
-		[Parameter(Mandatory=$false)] [string] $datasetId,
-		[Parameter(Mandatory=$false)] [string] $datasetName,
+        [Parameter(Mandatory=$false)] [string] $sourceDatasetId,
+        [Parameter(Mandatory=$false)] [string] $sourceDatasetName,
+		[Parameter(Mandatory=$false)] [string] $targetDatasetId,
+		[Parameter(Mandatory=$false)] [string] $targetDatasetName,
 		[Parameter(Mandatory=$false)] [int] $timeout = 300
 	)
 	
@@ -1492,23 +1494,35 @@ Function Set-PBIReportsDataset{
 	# Filter the reports if the -reportIds or -reportNames is passed
 
 	if ($reportIds -ne $null -or $reportNames -ne $null){
-		$reportNames | Foreach-Object {
-			$rep = @($allReports | Where-Object name -eq $_)
-			if ($rep.Count -ne 0)
-			{
-				$reportIds+=$rep.id
-			}
-		}
+		
+		$reportsToProcess = $allReports |? { $reportIds -contains $_.id -or $reportNames -contains $_.name}
 
-		$reportsToProcess = $allReports |? { $reportIds -contains $_.id }
 	}
+
+    $workspaceDatasets = Get-PBIDataset -authToken $authToken
+
+    if (![string]::IsNullOrEmpty($sourceDatasetId) -or ![string]::IsNullOrEmpty($sourceDatasetName))
+    {
+        $sourceDataset = Find-ByIdOrName -items $workspaceDatasets -id $sourceDatasetId -name $sourceDatasetName	
+
+        if (!$sourceDataset)
+        {
+            throw "Cannot find source dataset with id/name: $sourceDatasetId/$sourceDatasetName"
+        }
+
+        $reportsToProcess = $reportsToProcess |? { $_.datasetId -eq $sourceDataset.id }
+    }
 
     # Rebind the reports
 
     if ($reportsToProcess.Count -ne 0)
-    {
-        $workspaceDatasets = Get-PBIDataset -authToken $authToken
-		$dataset = Find-ByIdOrName -items $workspaceDatasets -id $datasetId -name $datasetName	
+    {        
+		$dataset = Find-ByIdOrName -items $workspaceDatasets -id $targetDatasetId -name $targetDatasetName	
+
+        if (!$dataset)
+        {
+            throw "Cannot find target dataset with id/name: $targetDatasetId/$targetDatasetName"
+        }
 
         $reportsToProcess |% {
 		
