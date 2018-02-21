@@ -1513,6 +1513,8 @@ Function Set-PBIReportsDataset{
         $reportsToProcess = $reportsToProcess |? { $_.datasetId -eq $sourceDataset.id }
     }
 
+    Write-Verbose "Rebinding $($reportsToProcess.Count) datasets"
+
     # Rebind the reports
 
     if ($reportsToProcess.Count -ne 0)
