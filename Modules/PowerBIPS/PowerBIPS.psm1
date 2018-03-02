@@ -1700,6 +1700,160 @@ Function Get-PBIDatasetRefreshHistory{
 	Write-Output $dsHistory
 }
 
+function Get-PBIDatasetParameters{
+<#
+.SYNOPSIS    
+	Gets all parameters available in one or more datasets.
+		
+.EXAMPLE
+	Get-PBIDatasetParameters -authToken $authToken -datasetId $datasetId
+
+.PARAMETER AuthToken
+	The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+
+.PARAMETER DatasetIds
+	An array of strings with the dataset IDs to get refresh history
+
+.PARAMETER DatasetNames
+	An array of strings with the dataset names to get refresh history
+
+#>
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string[]] $datasetIds,
+		[Parameter(Mandatory=$false)] [string[]] $datasetNames
+	)
+	
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+	$dsets = Get-PBIDataSet -authToken $authToken
+
+	if (-not [string]::IsNullOrEmpty($datasetNames))
+	{
+		$datasetNames | Foreach-Object{
+			$dset = @($dsets | Where-Object name -eq $_)
+			if ($dset.Count -ne 0)
+			{
+				$datasetIds+=$dset.id
+			}
+			else{
+				throw "Cannot find dataset $_"
+			}
+		}
+	}
+
+	if (!$datasetIds){
+		$datasetIds=$dsets.id
+	}
+
+	$datasetIds | ForEach-Object {
+
+		$dataset = $dsets | Where-Object id -eq $_
+
+		if (!$dataset)
+		{
+			throw "Cannot find dataset $_"
+		}
+
+		$res=Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "datasets/$_/parameters") -Headers $headers -Method Get
+		$res=$res.value | Select-Object *,@{N="Dataset";E={$dataset}}
+		$res
+	}
+
+}
+
+function Set-PBIDatasetParameters{
+<#
+.SYNOPSIS    
+	Change parameter values in one or more datasets.
+		
+.EXAMPLE
+	Set-PBIDatasetParameters -authToken $authToken -datasetId $datasetId
+
+.PARAMETER AuthToken
+	The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+
+.PARAMETER DatasetIds
+	An array of strings with the dataset IDs to get refresh history
+
+.PARAMETER DatasetNames
+	An array of strings with the dataset names to get refresh history
+
+.PARAMETER Parameters
+	An hashtable with the following structure:
+
+	$parameters = @(
+            @{
+                name="ParameterName"
+                newValue="NewParameterValue"
+			},
+			...
+        )
+
+#>
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string[]] $datasetIds,
+		[Parameter(Mandatory=$false)] [string[]] $datasetNames,
+		[Parameter(Mandatory=$false)] $parameters
+	)
+
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+	$dsets = Get-PBIDataSet -authToken $authToken
+
+	if (-not [string]::IsNullOrEmpty($datasetNames))
+	{
+		$datasetNames | Foreach-Object{
+			$dset = @($dsets | Where-Object name -eq $_)
+			if ($dset.Count -ne 0)
+			{
+				$datasetIds+=$dset.id
+			}
+			else{
+				throw "Cannot find dataset $_"
+			}
+		}
+	}
+
+	if (!$datasetIds){
+		$datasetIds=$dsets.id
+	}
+
+	$datasetIds | ForEach-Object {
+
+		$dataset = $dsets | Where-Object id -eq $_
+
+		if (!$dataset)
+		{
+			throw "Cannot find dataset $_"
+		}
+
+		$bodyObj = @{updateDetails=$parameters}
+
+		try{
+			Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "datasets/$_/UpdateParameters") -Headers $headers -Method Post -Body ($bodyObj | ConvertTo-Json)
+			Write-Verbose "Parameters changed on dataset $($dataset.name) ($_)"
+		}
+		catch {
+			$result = $_.Exception.Response.GetResponseStream()
+			$reader = New-Object System.IO.StreamReader($result)
+			$reader.BaseStream.Position = 0
+			$reader.DiscardBufferedData()
+			Write-Error $reader.ReadToEnd()
+		}
+	}
+
+}
+
 Function New-PBIGroup{
 <#
 .SYNOPSIS

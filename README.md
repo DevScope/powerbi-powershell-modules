@@ -44,6 +44,8 @@ Cmdlets present in the module:
 | [Export-PBIReport](#ExportPBIReport) | Download reports as PBIX files |
 | [Copy-PBIReports](#CopyPBIReports) | Duplicate reports by suppling a list of the reports to copy |
 | [Set-PBIReportsDataset](#SetPBIReportsDataset) | Rebind reports to another dataset on the same workspace |
+| [Get-PBIDatasetParameters](#GetPBIDatasetParameters) | Gets all parameters available in one or more datasets |
+| [Set-PBIDatasetParameters](#SetPBIDatasetParameters) | Change parameter values in one or more datasets |
 
 
 
@@ -400,5 +402,37 @@ $authToken = Get-PBIAuthToken
 Set-PBIGroup -authToken $authToken -name "Sales"
 
 Set-PBIReportsDataset -authToken $authToken -reportNames "Report1","Report2" -datasetName "SalesDataset"
+
+```
+
+## <a name="GetPBIDatasetParameters"></a>Get-PBIDatasetParameters - Gets all parameters available in one or more datasets.
+
+```powershell
+
+$authToken = Get-PBIAuthToken
+
+Set-PBIGroup -authToken $authToken -name "Sales"
+
+$parameters = Get-PBIDatasetParameters -authToken $authToken -datasetNames "SomeDataset"
+$parameters | Format-Table
+
+```
+
+## <a name="SetPBIDatasetParameters"></a>Set-PBIDatasetParameters - Change parameter values in one or more datasets.
+
+```powershell
+
+$authToken = Get-PBIAuthToken
+
+Set-PBIGroup -authToken $authToken -name "Sales"
+
+$parameters = @(
+    @{
+        name="SomeParameter"
+        newValue="SomeValue"
+    }
+)
+
+Set-PBIDatasetParameters -authToken $authToken -parameters $parameters -datasetNames "SomeDataset"
 
 ```
