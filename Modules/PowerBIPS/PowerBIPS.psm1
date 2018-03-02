@@ -1273,10 +1273,10 @@ Function Export-PBIReport{
 		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$false)] [string[]] $reportIds,
 		[Parameter(Mandatory=$false)] [string[]] $reportNames,
-		[Parameter(Mandatory=$false)] [string] $destinationFolder = (Split-Path $MyInvocation.MyCommand.Definition -Parent),
+		[Parameter(Mandatory=$false)] [string] $destinationFolder = ".",
 		[Parameter(Mandatory=$false)] [int] $timeout = 300
 	)
-	
+
     $authToken = Resolve-PowerBIAuthToken $authToken
 
 	$headers = Get-PowerBIRequestHeader $authToken
