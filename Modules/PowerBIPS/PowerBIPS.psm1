@@ -1841,6 +1841,7 @@ function Set-PBIDatasetParameters{
 
 		try{
 			Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "datasets/$_/UpdateParameters") -Headers $headers -Method Post -Body ($bodyObj | ConvertTo-Json)
+			Write-Verbose "Parameters changed on dataset $($dataset.name) ($_)"
 		}
 		catch {
 			$result = $_.Exception.Response.GetResponseStream()
