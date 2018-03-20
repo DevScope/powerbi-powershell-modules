@@ -1933,6 +1933,85 @@ Function New-PBIGroupUser{
 	Write-Output $result
 }
 
+Function Update-PBIDatasetDatasources {
+<#
+.SYNOPSIS
+    Update the datasource of a dataset
+.DESCRIPTION
+	Changes the connection string of an existing dataset in PowerBI
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.PARAMETER DatasetId
+    The Id of the dataset which conection is to be modified. 
+.PARAMETER DatasourceType
+    The type of the datasource. The type cannot be changed from original to target.
+	e.g. "AnalysisServices" or "Sql"
+.PARAMETER OriginalServer
+    Original server.
+.PARAMETER originalDatabase
+    Original database.
+.PARAMETER TargetServer
+    New Server.
+.PARAMETER TargetDatabase
+    New database.
+.EXAMPLE
+    Update-PBIDatasetDatasources -datasetId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -datasourceType AnalysisServices -originalServer "asazure://eastus.asazure.windows.net/myssas" -originalDatabase  "wideworldimporters" -targetServer  "asazure://eastus.asazure.windows.net/myssas" -targetDatabase "wideworldimporters2"
+#>
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$true)] $datasetId,
+		[Parameter(Mandatory=$true)] $datasourceType,
+		[Parameter(Mandatory=$true)] $originalServer,
+		[Parameter(Mandatory=$true)] $originalDatabase,
+		[Parameter(Mandatory=$true)] $targetServer,
+		[Parameter(Mandatory=$true)] $targetDatabase
+	)
+
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+    # documentation at https://msdn.microsoft.com/en-us/library/mt814715.aspx
+	$url = Get-PowerBIRequestUrl -scope "datasets/$datasetId/updatedatasources"
+	
+	$body = @"
+{ 
+  "updateDetails":[ 
+    { 
+      "connectionDetails": 
+      { 
+        "server": "$($targetServer)", 
+        "database": "$($targetDatabase)" 
+      }, 
+      "datasourceSelector": 
+      {         
+        "datasourceType": "$($datasourceType)", 
+        "connectionDetails":  
+        { 
+          "server": "$($originalServer)", 
+          "database": "$($originalDatabase)" 
+        } 
+      } 
+    } 
+  ] 
+} 
+"@
+
+  try {
+	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $body
+  } catch {
+    $errordescription = switch ($_.Exception.Response.StatusCode.value__ ) {
+	  403 {"Unauthorized / OperationOnlySupportedForDatasetOwner"}
+	  404 {"NotFound: Dataset not found. A selector doesn't match any datasource."}
+	  400 {"BadRequest: Body contains multiple requests with the same datasource selector. Missing or empty updateDetails in body. Attempting to update a datasource with invalid connection details. Datasource type doesn't support update operation. Attempting to update a connection from cloud to on-premises or on-premises to cloud."}
+	}
+	throw $errordescription
+  }
+  Write-Output $result
+
+}
+
 #Function Get-PBIModels{
 #	[CmdletBinding()]		
 #	param(									
