@@ -1430,7 +1430,13 @@ Function Copy-PBIReports{
 					}
 				}
 
-				$res = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports/$($report.id)/Clone") -Headers $headers -Method Post -Body ($bodyObj | ConvertTo-Json)
+				try {
+					$res = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports/$($report.id)/Clone") -Headers $headers -Method Post -Body ($bodyObj | ConvertTo-Json)
+				}
+				catch {
+					$res = "Error: $(ParseErrorForResponseBody($_))"
+					Write-Host $res
+				}
 
 				$newReportsData += $res
 			}
@@ -2427,6 +2433,25 @@ function Find-ByIdOrName ($items, $id, $name) {
 	}
 
 	return $item
+}
+
+# https://stackoverflow.com/a/48154663
+function ParseErrorForResponseBody($Error) {
+    if ($PSVersionTable.PSVersion.Major -lt 6) {
+        if ($Error.Exception.Response) {  
+            $Reader = New-Object System.IO.StreamReader($Error.Exception.Response.GetResponseStream())
+            $Reader.BaseStream.Position = 0
+            $Reader.DiscardBufferedData()
+            $ResponseBody = $Reader.ReadToEnd()
+            if ($ResponseBody.StartsWith('{')) {
+                $ResponseBody = $ResponseBody | ConvertFrom-Json | ConvertTo-Json -Compress
+            }
+            return $ResponseBody
+        }
+    }
+    else {
+        return $Error.ErrorDetails.Message
+    }
 }
 
 #endregion
