@@ -183,69 +183,124 @@ Function Set-PBIGroup{
 }
 
 Function Get-PBIReport{
-	<#
-	.SYNOPSIS    
-		Gets all the PowerBI existing reports and returns as an array of custom objects.
-		
-	.EXAMPLE	
-		Get-PBIReport -authToken $authToken	
-	.EXAMPLE
-		Get-PBIReport -authToken $authToken	-id $id
+<#
+.SYNOPSIS    
+	Gets all the PowerBI existing reports and returns as an array of custom objects.
 	
-	#>
-		[CmdletBinding()]		
-		param(									
-			[Parameter(Mandatory=$false)] [string] $authToken,
-			[Parameter(Mandatory=$false)] [string] $name,
-			[Parameter(Mandatory=$false)] [string] $id		
-		)
-		
-		$authToken = Resolve-PowerBIAuthToken $authToken
+.EXAMPLE	
+	Get-PBIReport -authToken $authToken	
+.EXAMPLE
+	Get-PBIReport -authToken $authToken	-id $id
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $name,
+		[Parameter(Mandatory=$false)] [string] $id		
+	)
 	
-		$headers = Get-PowerBIRequestHeader $authToken
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+	Write-Verbose "Getting Reports"
 	
-		Write-Verbose "Getting Reports"
+	$result = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports" -beta) -Headers $headers -Method Get 
+	
+	$reports = $result.value
+	
+	Write-Verbose "Found $($reports.count) reports."
+	
+	if (-not [string]::IsNullOrEmpty($id))
+	{
+		Write-Verbose "Searching for the report '$id'"		
 		
-		$result = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports" -beta) -Headers $headers -Method Get 
+		$reports = @($reports |? name -eq $name)
 		
-		$reports = $result.value
-		
-		Write-Verbose "Found $($reports.count) reports."
-		
-		if (-not [string]::IsNullOrEmpty($id))
+		if ($reports.Count -ne 0)
 		{
-			Write-Verbose "Searching for the report '$id'"		
+			Write-Verbose "Found report with id: '$id'"				
+		}
+		else
+		{
+			throw "Cannot find report with id: '$id'"			
+		}				
+	}
+	else{
+		if (-not [string]::IsNullOrEmpty($name))
+		{
+			Write-Verbose "Searching for the report '$name'"		
 			
 			$reports = @($reports |? name -eq $name)
 			
 			if ($reports.Count -ne 0)
 			{
-				Write-Verbose "Found report with id: '$id'"				
+				Write-Verbose "Found report with name: '$name'"				
 			}
 			else
 			{
-				throw "Cannot find report with id: '$id'"			
+				throw "Cannot find report with name: '$name'"			
 			}				
 		}
-		else{
-			if (-not [string]::IsNullOrEmpty($name))
-			{
-				Write-Verbose "Searching for the report '$name'"		
-				
-				$reports = @($reports |? name -eq $name)
-				
-				if ($reports.Count -ne 0)
-				{
-					Write-Verbose "Found report with name: '$name'"				
-				}
-				else
-				{
-					throw "Cannot find report with name: '$name'"			
-				}				
-			}
-		}
-		Write-Output $reports
 	}
+	Write-Output $reports
+}
+
+Function New-PBIDashboard{
+<#
+.SYNOPSIS
+    Create a new Dashboard
+
+.DESCRIPTION	
+	Create a new Dashboard in PowerBI		
+
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+
+.PARAMETER GroupId
+    The id of the group in PowerBI
+
+.PARAMETER Name
+    The name of the new dashboard
+
+.EXAMPLE
+								
+		New-PBIDashboard -authToken $authToken -groupId $groupId
+		A new dashboard will be created and in case of success return the internal dashboard id
+
+#>
+	[CmdletBinding()]	
+	param(									
+		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $groupId,
+		[Parameter(Mandatory=$true)] [string] $name
+	)
+		
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+	
+	$jsonBody = ConvertTo-PBIJson -obj @{ name = $name }
+	
+	Write-Verbose "Creating new dashboard"	
+
+	$scope = "dashboards"
+
+	if (-not [string]::IsNullOrEmpty($groupId))
+	{
+        $scope = "groups/$groupId/$scope";
+    }
+	
+	$url = Get-PowerBIRequestUrl -scope $scope
+	
+	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $jsonBody  					
+	
+	Write-Verbose "Dashboard created with id: '$($result.id)"
+	
+	Write-Output $result
+}
 
 Function Get-PBIDashboard{
 <#
