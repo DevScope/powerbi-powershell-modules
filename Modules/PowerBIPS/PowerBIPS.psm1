@@ -148,7 +148,7 @@ Function Get-PBIAuthToken
 Function Set-PBIGroup{
 <#
 .SYNOPSIS
-   Set's the scope to the group specified, after execution all the following PowerBIPS cmdlets will execute over the setted group.
+   Set's the scope to the group specified, after execution all the following PowerBIPS cmdlets will execute over the set group.
 
 .PARAMETER AuthToken
     The authorization token required to communicate with the PowerBI APIs
@@ -290,6 +290,21 @@ Function Get-PBIDashboard{
 		{
 			throw "Cannot find dashboard with name: '$name'"			
 		}				
+	}
+	elseif (-not [string]::IsNullOrEmpty($id))
+	{
+		Write-Verbose "Searching for the dashboard '$id'"
+		
+		$dashboards = @($dashboards |? id -eq $id)
+		
+		if ($dashboards.Count -ne 0)
+		{
+			Write-Verbose "Found dashboard with id: '$id'"
+		}
+		else
+		{
+			throw "Cannot find dashboard with id: '$id'"
+		}				
 	}	
 
 	Write-Output $dashboards
@@ -408,7 +423,7 @@ Function Get-PBIGroupUsers{
 
 	if ([string]::IsNullOrEmpty($groupId))
 	{
-		throw "No group setted. Use Set-PBIGroup first to set the group."
+		throw "No group set. Use Set-PBIGroup first to set the group."
 	}
 	else
 	{	
@@ -1367,9 +1382,9 @@ Function Copy-PBIReports{
 			)
 	
 	originalReportId or originalReportName - The id or name of the report to copy
-	targetName - (Opcional) The name of the new report. If not setted,it will use the same name as the original report.
-	targetWorkspaceId or targetWorkspaceName- (Opcional) The id or name of the destination workspace. If not setted, the copy will be made to the actual workspace.
-	targetModelId or targetWorkspaceName - (Opcional) The id or name of the dataset to bind the new report. Mandatory if targetWorkspaceId or targetWorkspaceName is setted.
+	targetName - (Opcional) The name of the new report. If not set,it will use the same name as the original report.
+	targetWorkspaceId or targetWorkspaceName- (Opcional) The id or name of the destination workspace. If not set, the copy will be made to the actual workspace.
+	targetModelId or targetWorkspaceName - (Opcional) The id or name of the dataset to bind the new report. Mandatory if targetWorkspaceId or targetWorkspaceName is set.
 
 #>
 	[CmdletBinding()]		
