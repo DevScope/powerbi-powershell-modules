@@ -148,7 +148,7 @@ Function Get-PBIAuthToken
 Function Set-PBIGroup{
 <#
 .SYNOPSIS
-   Set's the scope to the group specified, after execution all the following PowerBIPS cmdlets will execute over the setted group.
+   Set's the scope to the group specified, after execution all the following PowerBIPS cmdlets will execute over the set group.
 
 .PARAMETER AuthToken
     The authorization token required to communicate with the PowerBI APIs
@@ -183,69 +183,124 @@ Function Set-PBIGroup{
 }
 
 Function Get-PBIReport{
-	<#
-	.SYNOPSIS    
-		Gets all the PowerBI existing reports and returns as an array of custom objects.
-		
-	.EXAMPLE	
-		Get-PBIReport -authToken $authToken	
-	.EXAMPLE
-		Get-PBIReport -authToken $authToken	-id $id
+<#
+.SYNOPSIS    
+	Gets all the PowerBI existing reports and returns as an array of custom objects.
 	
-	#>
-		[CmdletBinding()]		
-		param(									
-			[Parameter(Mandatory=$false)] [string] $authToken,
-			[Parameter(Mandatory=$false)] [string] $name,
-			[Parameter(Mandatory=$false)] [string] $id		
-		)
-		
-		$authToken = Resolve-PowerBIAuthToken $authToken
+.EXAMPLE	
+	Get-PBIReport -authToken $authToken	
+.EXAMPLE
+	Get-PBIReport -authToken $authToken	-id $id
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $name,
+		[Parameter(Mandatory=$false)] [string] $id		
+	)
 	
-		$headers = Get-PowerBIRequestHeader $authToken
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+
+	Write-Verbose "Getting Reports"
 	
-		Write-Verbose "Getting Reports"
+	$result = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports" -beta) -Headers $headers -Method Get 
+	
+	$reports = $result.value
+	
+	Write-Verbose "Found $($reports.count) reports."
+	
+	if (-not [string]::IsNullOrEmpty($id))
+	{
+		Write-Verbose "Searching for the report '$id'"		
 		
-		$result = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports" -beta) -Headers $headers -Method Get 
+		$reports = @($reports |? name -eq $name)
 		
-		$reports = $result.value
-		
-		Write-Verbose "Found $($reports.count) reports."
-		
-		if (-not [string]::IsNullOrEmpty($id))
+		if ($reports.Count -ne 0)
 		{
-			Write-Verbose "Searching for the report '$id'"		
+			Write-Verbose "Found report with id: '$id'"				
+		}
+		else
+		{
+			throw "Cannot find report with id: '$id'"			
+		}				
+	}
+	else{
+		if (-not [string]::IsNullOrEmpty($name))
+		{
+			Write-Verbose "Searching for the report '$name'"		
 			
 			$reports = @($reports |? name -eq $name)
 			
 			if ($reports.Count -ne 0)
 			{
-				Write-Verbose "Found report with id: '$id'"				
+				Write-Verbose "Found report with name: '$name'"				
 			}
 			else
 			{
-				throw "Cannot find report with id: '$id'"			
+				throw "Cannot find report with name: '$name'"			
 			}				
 		}
-		else{
-			if (-not [string]::IsNullOrEmpty($name))
-			{
-				Write-Verbose "Searching for the report '$name'"		
-				
-				$reports = @($reports |? name -eq $name)
-				
-				if ($reports.Count -ne 0)
-				{
-					Write-Verbose "Found report with name: '$name'"				
-				}
-				else
-				{
-					throw "Cannot find report with name: '$name'"			
-				}				
-			}
-		}
-		Write-Output $reports
 	}
+	Write-Output $reports
+}
+
+Function New-PBIDashboard{
+<#
+.SYNOPSIS
+    Create a new Dashboard
+
+.DESCRIPTION	
+	Create a new Dashboard in PowerBI		
+
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+
+.PARAMETER GroupId
+    The id of the group in PowerBI
+
+.PARAMETER Name
+    The name of the new dashboard
+
+.EXAMPLE
+								
+		New-PBIDashboard -authToken $authToken -groupId $groupId
+		A new dashboard will be created and in case of success return the internal dashboard id
+
+#>
+	[CmdletBinding()]	
+	param(									
+		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $groupId,
+		[Parameter(Mandatory=$true)] [string] $name
+	)
+		
+	$authToken = Resolve-PowerBIAuthToken $authToken
+
+	$headers = Get-PowerBIRequestHeader $authToken
+	
+	$jsonBody = ConvertTo-PBIJson -obj @{ name = $name }
+	
+	Write-Verbose "Creating new dashboard"	
+
+	$scope = "dashboards"
+
+	if (-not [string]::IsNullOrEmpty($groupId))
+	{
+        $scope = "groups/$groupId/$scope";
+    }
+	
+	$url = Get-PowerBIRequestUrl -scope $scope
+	
+	$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $jsonBody  					
+	
+	Write-Verbose "Dashboard created with id: '$($result.id)"
+	
+	Write-Output $result
+}
 
 Function Get-PBIDashboard{
 <#
@@ -289,6 +344,21 @@ Function Get-PBIDashboard{
 		else
 		{
 			throw "Cannot find dashboard with name: '$name'"			
+		}				
+	}
+	elseif (-not [string]::IsNullOrEmpty($id))
+	{
+		Write-Verbose "Searching for the dashboard '$id'"
+		
+		$dashboards = @($dashboards |? id -eq $id)
+		
+		if ($dashboards.Count -ne 0)
+		{
+			Write-Verbose "Found dashboard with id: '$id'"
+		}
+		else
+		{
+			throw "Cannot find dashboard with id: '$id'"
 		}				
 	}	
 
@@ -408,7 +478,7 @@ Function Get-PBIGroupUsers{
 
 	if ([string]::IsNullOrEmpty($groupId))
 	{
-		throw "No group setted. Use Set-PBIGroup first to set the group."
+		throw "No group set. Use Set-PBIGroup first to set the group."
 	}
 	else
 	{	
@@ -1367,9 +1437,9 @@ Function Copy-PBIReports{
 			)
 	
 	originalReportId or originalReportName - The id or name of the report to copy
-	targetName - (Opcional) The name of the new report. If not setted,it will use the same name as the original report.
-	targetWorkspaceId or targetWorkspaceName- (Opcional) The id or name of the destination workspace. If not setted, the copy will be made to the actual workspace.
-	targetModelId or targetWorkspaceName - (Opcional) The id or name of the dataset to bind the new report. Mandatory if targetWorkspaceId or targetWorkspaceName is setted.
+	targetName - (Opcional) The name of the new report. If not set,it will use the same name as the original report.
+	targetWorkspaceId or targetWorkspaceName- (Opcional) The id or name of the destination workspace. If not set, the copy will be made to the actual workspace.
+	targetModelId or targetWorkspaceName - (Opcional) The id or name of the dataset to bind the new report. Mandatory if targetWorkspaceId or targetWorkspaceName is set.
 
 #>
 	[CmdletBinding()]		
@@ -1430,7 +1500,13 @@ Function Copy-PBIReports{
 					}
 				}
 
-				$res = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports/$($report.id)/Clone") -Headers $headers -Method Post -Body ($bodyObj | ConvertTo-Json)
+				try {
+					$res = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope "reports/$($report.id)/Clone") -Headers $headers -Method Post -Body ($bodyObj | ConvertTo-Json)
+				}
+				catch {
+					$res = "Error: $(ParseErrorForResponseBody($_))"
+					Write-Host $res
+				}
 
 				$newReportsData += $res
 			}
@@ -2427,6 +2503,25 @@ function Find-ByIdOrName ($items, $id, $name) {
 	}
 
 	return $item
+}
+
+# https://stackoverflow.com/a/48154663
+function ParseErrorForResponseBody($Error) {
+    if ($PSVersionTable.PSVersion.Major -lt 6) {
+        if ($Error.Exception.Response) {  
+            $Reader = New-Object System.IO.StreamReader($Error.Exception.Response.GetResponseStream())
+            $Reader.BaseStream.Position = 0
+            $Reader.DiscardBufferedData()
+            $ResponseBody = $Reader.ReadToEnd()
+            if ($ResponseBody.StartsWith('{')) {
+                $ResponseBody = $ResponseBody | ConvertFrom-Json | ConvertTo-Json -Compress
+            }
+            return $ResponseBody
+        }
+    }
+    else {
+        return $Error.ErrorDetails.Message
+    }
 }
 
 #endregion

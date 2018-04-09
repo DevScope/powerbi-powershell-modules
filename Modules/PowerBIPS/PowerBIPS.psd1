@@ -4,7 +4,7 @@
 RootModule = 'PowerBIPS.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.3.4.0'
+ModuleVersion = '1.3.5.0'
 
 # ID used to uniquely identify this module
 GUID = '163A1640-A4F2-4B1F-A3AF-2796AD56200B'
@@ -66,7 +66,7 @@ FunctionsToExport = @(
     , "Get-PBIDatasetParameters", "Set-PBIDatasetParameters"
 	, "Add-PBITableRows", "Clear-PBITableRows", "Update-PBITableSchema"	
 	, "Get-PBIImports", "Import-PBIFile"
-	, "Get-PBIDashboard", "Get-PBIDashboardTile"
+	, "Get-PBIDashboard", "Get-PBIDashboardTile", "New-PBIDashboard"
 	, "Get-PBIReport", "Export-PBIReport", "Copy-PBIReports", "Set-PBIReportsDataset"
     , "Get-PBIDatasources", "Execute-PBIPost"
 )
