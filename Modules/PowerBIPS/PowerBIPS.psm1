@@ -43,11 +43,25 @@ $script:pbiGroupId = $null
 
 Function Set-PBIModuleConfig
 {
-    <#
-        .SYNOPSIS
-        Sets the module config variables like: API Url, App Id,...          
-    #>
-    
+<#
+.SYNOPSIS
+Sets the module config variables like: API Url, App Id,...          
+.DESCRIPTION
+Sets the module config variables like: API Url, App Id,...
+.PARAMETER PBIAPIUrl
+The url for the PBI API
+.PARAMETER AzureADAppId
+Your Azure AD Application Id
+.PARAMETER AzureADAuthorityUrl
+Url to the Azure AD Authority URL
+Default: "https://login.microsoftonline.com/common/oauth2/authorize"
+.PARAMETER AzureADRedirectUrl
+Url to the Redirect Url of the Azure AD App
+Default: "https://login.live.com/oauth20_desktop.srf"
+.EXAMPLE
+Set-PBIModuleConfig -pbiAPIUrl "https://api.powerbi.com/beta/myorg" -AzureADAppId "YOUR Azure AD GUID"
+#>
+    [CmdletBinding()]
     param
     (
         [string]
@@ -103,9 +117,14 @@ Function Get-PBIModuleConfig
 {
     <#
         .SYNOPSIS
-        Gets the module config variables like: API Url, App Id,...          
-    #>
-   
+		Gets the module config variables like: API Url, App Id,...          
+		.DESCRIPTION
+		Gets the module config variables like: API Url, App Id,...          
+		.EXAMPLE
+		Get-PBIModuleConfig
+	#>
+	[CmdletBinding()]
+	param()
 
     Write-Output @{
         "pbiDefaultClientId" = $pbiDefaultClientId
@@ -119,40 +138,39 @@ Function Get-PBIModuleConfig
 
 Function Get-PBIAuthToken
 {
-    <#
-            .SYNOPSIS
-            Gets the authentication token required to comunicate with the PowerBI API's
+<#
+.SYNOPSIS
+Gets the authentication token required to comunicate with the PowerBI API's
 
+.DESCRIPTION
+To authenticate with PowerBI uses OAuth 2.0 with the Azure AD Authentication Library (ADAL)
 
-            .DESCRIPTION
-            To authenticate with PowerBI uses OAuth 2.0 with the Azure AD Authentication Library (ADAL)
+If a credential is not supplied a popup will appear for the user to authenticate.
 
-            If a credential is not supplied a popup will appear for the user to authenticate.
+It will automatically download and install the required nuget: "Microsoft.IdentityModel.Clients.ActiveDirectory".
 
-            It will automatically download and install the required nuget: "Microsoft.IdentityModel.Clients.ActiveDirectory".
+.PARAMETER ClientId
+The Client Id of the Azure AD application
 
-            .PARAMETER ClientId
-            The Client Id of the Azure AD application
+.PARAMETER Credential
+Specifies a PSCredential object or a string username used to authenticate to PowerBI. If only a username is specified 
+this will prompt for the password. Note that this will not work with federated users.
 
-            .PARAMETER Credential
-			Specifies a PSCredential object or a string username used to authenticate to PowerBI. If only a username is specified 
-			this will prompt for the password. Note that this will not work with federated users.
+.PARAMETER RedirectUri
+The redirect URI associated with the native client application
 
-            .PARAMETER RedirectUri
-            The redirect URI associated with the native client application
+.PARAMETER ForceAskCredentials
+Forces the authentication popup to always ask for the username and password
 
-            .PARAMETER ForceAskCredentials
-            Forces the authentication popup to always ask for the username and password
-
-            .EXAMPLE
-            Get-PBIAuthToken -clientId "C0E8435C-614D-49BF-A758-3EF858F8901B"
-            Returns the access token for the PowerBI REST API using the client ID. You'll be presented with a pop-up window for 
-			user authentication.
-            .EXAMPLE
-			$Credential = Get-Credential
-            Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -Credential $Credential
-            Returns the access token for the PowerBI REST API using the client ID and a PSCredential object.
-    #>
+.EXAMPLE
+Get-PBIAuthToken -clientId "C0E8435C-614D-49BF-A758-3EF858F8901B"
+Returns the access token for the PowerBI REST API using the client ID. You'll be presented with a pop-up window for 
+user authentication.
+.EXAMPLE
+$Credential = Get-Credential
+Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -Credential $Credential
+Returns the access token for the PowerBI REST API using the client ID and a PSCredential object.
+#>
     
     [CmdletBinding(DefaultParameterSetName = 'default')]
     [OutputType([string])]
@@ -161,12 +179,16 @@ Function Get-PBIAuthToken
         [Parameter(Mandatory = $true, ParameterSetName = 'credential')]
         [System.Management.Automation.CredentialAttribute()]
         $Credential,
-
         [Parameter(ParameterSetName = 'default')]
         [switch]
-        $ForceAskCredentials = $false
+		$ForceAskCredentials = $false,
+		[Parameter(ParameterSetName = 'default')]
+        [string]
+		$clientId,
+		[Parameter(ParameterSetName = 'default')]
+        [string]
+        $redirectUri
 	)
-
 
     if ($Script:AuthContext -eq $null)
     {
@@ -174,7 +196,18 @@ Function Get-PBIAuthToken
         $script:AuthContext = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext -ArgumentList ($script:pbiAuthorityUrl)
     }
 
-    Write-Verbose -Message 'Getting the Authentication Token'
+	if ([string]::IsNullOrEmpty($clientId))
+	{
+		$clientId = $script:pbiDefaultClientId
+	}
+	
+	if ([string]::IsNullOrEmpty($redirectUri))
+	{
+		$redirectUri = $script:pbiDefaultAuthRedirectUri
+	}
+	
+	Write-Verbose -Message 'Getting the Authentication Token'
+	
     if ($PSCmdlet.ParameterSetName -eq 'credential')
     {
         Write-Verbose -Message 'Using username+password authentication flow'
@@ -183,7 +216,7 @@ Function Get-PBIAuthToken
 		
         $AuthResult = [Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContextIntegratedAuthExtensions]::AcquireTokenAsync($script:AuthContext
         , $script:pbiResourceUrl
-		, $ClientId
+		, $clientId
 		, $UserCredential).Result
     }
     else
@@ -202,7 +235,7 @@ Function Get-PBIAuthToken
 		$pltParams = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.PlatformParameters($promptBehavior)
 		
 		$AuthResult = $script:authContext.AcquireTokenAsync($script:pbiResourceUrl
-			, $script:pbiDefaultClientId, [Uri]$script:pbiDefaultAuthRedirectUri
+			, $clientId, [Uri]$redirectUri
 			, $pltParams
 		).Result        
     }
@@ -215,21 +248,22 @@ Function Get-PBIAuthToken
 Function Set-PBIGroup{
 <#
 .SYNOPSIS
-   Set's the scope to the group specified, after execution all the following PowerBIPS cmdlets will execute over the setted group.
-
+   Set's the scope to the group specified, after execution all the following PowerBIPS cmdlets will execute over the defined group.
+.DESCRIPTION
+   Set's the scope to the group specified, after execution all the following PowerBIPS cmdlets will execute over the defined group.
 .PARAMETER AuthToken
     The authorization token required to communicate with the PowerBI APIs
 	Use 'Get-PBIAuthToken' to get the authorization token string
-
 .PARAMETER Id
     The id of the group
-	
 .PARAMETER Name
     The name of the group
-
 .PARAMETER Clear
     If $true then will clear the group and all the requests will be made to the default user workspace
-
+.EXAMPLE
+	Set-PBIGroup -id "GUID"
+.EXAMPLE
+	Set-PBIGroup -name "Group Name"
 #>
 	[CmdletBinding()][Alias("Set-PBIWorkspace")]			
 	param(									
@@ -250,21 +284,33 @@ Function Set-PBIGroup{
 }
 
 Function Get-PBIReport{
-	<#
-	.SYNOPSIS    
-		Gets all the PowerBI existing reports and returns as an array of custom objects.
-		
-	.EXAMPLE	
-		Get-PBIReport -authToken $authToken	
-	.EXAMPLE
-		Get-PBIReport -authToken $authToken	-id $id
-	
-	#>
+<#
+.SYNOPSIS    
+	Gets an array of Power BI Report metadata from a workspace
+.DESCRIPTION
+	Gets an array of Power BI Report metadata from a workspace
+.PARAMETER AuthToken
+    The authorization token required to communicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.PARAMETER Id
+    The id of the group
+.PARAMETER Name
+	The name of the group
+.PARAMETER GroupId
+	Id of the workspace where the reports will get pulled
+.EXAMPLE	
+	Get-PBIReport
+.EXAMPLE
+	Get-PBIReport -id "GUID"
+.EXAMPLE
+	Get-PBIReport -id "GUID" -groupId "GUID"
+#>
 		[CmdletBinding()]		
 		param(									
 			[Parameter(Mandatory=$false)] [string] $authToken,
 			[Parameter(Mandatory=$false)] [string] $name,
-			[Parameter(Mandatory=$false)] [string] $id		
+			[Parameter(Mandatory=$false)] [string] $id,
+			[Parameter(Mandatory=$false)] [string] $groupId		
 		)
 					
 		Write-Verbose "Getting Reports"
@@ -276,22 +322,21 @@ Function Get-PBIReport{
 			$resource += "/$id"
 		}
 
-		$reports = @(Invoke-PBIRequest -authToken $authToken -method Get -resource $resource)
+		$reports = @(Invoke-PBIRequest -authToken $authToken -method Get -resource $resource -groupId $groupId)
 						
 		Write-Verbose "Found $($reports.count) reports."
 
-		Write-Output (Find-ByIdOrName -items $reports -id $id -name $name)			
+		$reports = Find-ByIdOrName -items $reports -id $id -name $name
+		
+		Write-Output $reports
 }
 
 Function Get-PBIDashboard{
 <#
-.SYNOPSIS    
+.SYNOPSIS 
 	Gets all the PowerBI existing dashboards and returns as an array of custom objects.
-		
-.EXAMPLE
-			
-		Get-PBIDashboard -authToken $authToken		
-
+.EXAMPLE			
+	Get-PBIDashboard -authToken $authToken		
 #>
 	[CmdletBinding()]		
 	param(									
@@ -378,26 +423,15 @@ Function Get-PBIGroupUsers{
 #>
 	[CmdletBinding()][Alias("Get-PBIWorkspaceUsers")]		
 	param(									
-		[Parameter(Mandatory=$false)] [string] $authToken	
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $groupId
 	)
 
-	$groupId = $script:pbiGroupId
+	Write-Verbose "Getting Users"
 
-	if ([string]::IsNullOrEmpty($groupId))
-	{
-		throw "No group setted. Use Set-PBIGroup first to set the group."
-	}
-	else
-	{	
-		Write-Verbose "Getting Users"
-
-        $users = Invoke-PBIRequest -authToken $authToken -method Get -resource "users"			
-		
-		Write-Verbose "Found $($users.count) users."
-		
-		Write-Output $users
-	}
-
+	$users = Invoke-PBIRequest -authToken $authToken -method Get -resource "users" -groupId $groupId	 				
+	
+	Write-Output $users	
 }
 
 Function New-PBIGroup{
@@ -424,7 +458,9 @@ Function New-PBIGroup{
 		name = $name
 	} | ConvertTo-Json	
 
-    Write-Output Invoke-PBIRequest -authToken $authToken -method Post -resource "groups" -Body $body -ignoreGroup	
+	$res = Invoke-PBIRequest -authToken $authToken -method Post -resource "groups" -Body $body -ignoreGroup	
+	
+	Write-Output $res
 }
 
 Function New-PBIGroupUser{
@@ -447,12 +483,12 @@ Function New-PBIGroupUser{
 #>
 	[CmdletBinding()][Alias("New-PBIWorkspaceUser")]
 	param(
-		[Parameter(Mandatory=$false)] [string] $authToken,
-		[Parameter(Mandatory=$true)] $groupId,
-        [Parameter(Mandatory=$true)] $emailAddress,
+		[Parameter(Mandatory=$false)] [string] $authToken,		
+		[Parameter(Mandatory=$true)] [string] $groupId,
+		[Parameter(Mandatory=$true)] [string] $emailAddress,
 		[Parameter(Mandatory=$false)]
-		[ValidateSet("Admin")]
-		[string]$groupUserAccessRight = "Admin"
+		[ValidateSet("Admin", "Member")]
+		[string]$groupUserAccessRight = "Admin"	
 	)	
 
 	$body = @{
@@ -460,9 +496,9 @@ Function New-PBIGroupUser{
 		emailAddress = $emailAddress
 	} | ConvertTo-Json	
 
-    $result = Invoke-PBIRequest -authToken $authToken -method Post -resource "groups/$groupId/users" -Body $body -ignoreGroup	
+	$result = Invoke-PBIRequest -authToken $authToken -method Post -resource "users" -Body $body -groupId $groupId	
 
-	Write-Output $result
+	Write-Output $result	
 }
 
 
@@ -507,14 +543,15 @@ Function Get-PBIDataSet{
 		[Parameter(Mandatory=$false)] [string] $name,
 		[Parameter(Mandatory=$false)] [string] $id,
 		[Parameter(Mandatory=$false)] [switch] $includeDefinition,
-		[Parameter(Mandatory=$false)] [switch] $includeTables		
+		[Parameter(Mandatory=$false)] [switch] $includeTables,
+		[Parameter(Mandatory=$false)] [string] $groupId
 	)
 	
 	if ([string]::IsNullOrEmpty($id))
 	{
 		Write-Verbose "Getting DataSets"				
 		
-        $dataSets = @(Invoke-PBIRequest -authToken $authToken -method Get -resource "datasets")				
+        $dataSets = @(Invoke-PBIRequest -authToken $authToken -method Get -resource "datasets" -groupId $groupId)				
 		
 		Write-Verbose "Found $($dataSets.count) datasets."	
 		
@@ -527,7 +564,7 @@ Function Get-PBIDataSet{
 			$dataSets |% {
 				$dataSet = $_
 				
-				$dataSetDefinition = Get-PBIDataSet -authToken $authToken -id $_.Id -ErrorAction Continue
+				$dataSetDefinition = Get-PBIDataSet -authToken $authToken -id $_.Id -groupId $groupId -ErrorAction Continue
 				
 				$dataSetDefinition | Get-Member -MemberType NoteProperty |%{
 					
@@ -540,7 +577,7 @@ Function Get-PBIDataSet{
 	{
 		Write-Verbose "Getting DataSet Definition"
 		
-        $dataSets = @(Invoke-PBIRequest -authToken $authToken -method Get -resource "datasets/$id")				
+        $dataSets = @(Invoke-PBIRequest -authToken $authToken -method Get -resource "datasets/$id" -groupId $groupId)				
 	}
 	
 	# if IncludeTables is true then call the GetTables operation
@@ -550,7 +587,7 @@ Function Get-PBIDataSet{
 		$dataSets |% {
 			$dataSet = $_						
 			
-			$tables = Get-PBIDataSetTables -authToken $authToken -dataSetId $_.Id
+			$tables = Get-PBIDataSetTables -authToken $authToken -dataSetId $_.Id -groupId $groupId
 					
 			$dataSet | Add-Member -MemberType NoteProperty -Name "tables" -Value $tables			
 		}
@@ -563,14 +600,15 @@ Function Get-PBIDataSetTables{
 	[CmdletBinding()]		
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
-		[Parameter(Mandatory=$true)] [string] $dataSetId		
+		[Parameter(Mandatory=$true)] [string] $dataSetId,
+		[Parameter(Mandatory=$true)] [string] $groupId		
 	)
 			
 	Write-Verbose "Getting DataSet '$dataSetId' Tables"
 		
 	try
 	{	
-		$result = Invoke-PBIRequest -authToken $authToken -method Get -resource "datasets/$dataSetId/tables"	
+		$result = Invoke-PBIRequest -authToken $authToken -method Get -resource "datasets/$dataSetId/tables" -groupId $groupId	
         		
 		Write-Output $result	
 	}
@@ -1153,7 +1191,8 @@ Function Get-PBIImports{
 	[CmdletBinding()]		
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
-		[Parameter(Mandatory=$false)] [string] $importId
+		[Parameter(Mandatory=$false)] [string] $importId,
+		[Parameter(Mandatory=$false)] [string] $groupId
 	)
 	
 	Write-Verbose "Getting Imports"
@@ -1165,7 +1204,7 @@ Function Get-PBIImports{
 		$resource = "imports/$importId"
 	}	
 	
-	$result = Invoke-PBIRequest -authToken $authToken -method Get -resource $resource
+	$result = Invoke-PBIRequest -authToken $authToken -method Get -resource $resource -groupId $groupId
 	
 	Write-Output $result
 }
@@ -1174,42 +1213,62 @@ Function Import-PBIFile{
 	[CmdletBinding()]		
 	param(		
 		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$true, ValueFromPipeline = $true)] $file,
 		[Parameter(Mandatory=$false)] [string] $dataSetName,
 		[Parameter(Mandatory=$false)]
 		[ValidateSet("Abort","Overwrite","Ignore")]
 		[string]$nameConflict = "Ignore",
-		[Parameter(Mandatory=$true)] [string]$filePath		
+		[Parameter(Mandatory=$false)] [string] $groupId
 	)
-		
-	$fileName = [uri]::EscapeDataString([IO.Path]::GetFileName($filePath))
 	
-	if ([string]::IsNullOrEmpty($dataSetName))
-	{
-		$dataSetName = $fileName
-	}			    			
-	
-	$boundary = [System.Guid]::NewGuid().ToString("N")   
-		
-	$fileBin = [IO.File]::ReadAllBytes($filePath)	      
-    
-	$enc = [System.Text.Encoding]::GetEncoding("iso-8859-1")
-	
-	$fileEnc = $enc.GetString($fileBin)	
-	
-    $LF = [System.Environment]::NewLine
-	
-	$bodyLines = (
-		"--$boundary",
-		"Content-Disposition: form-data; name=`"file0`"; filename=`"$fileName`"; filename*=UTF-8''$fileName",
-		"Content-Type: application/x-zip-compressed$LF",
-		$fileEnc,
-		"--$boundary--$LF"
-	) -join $LF			
+	begin
+	{			
+	}
+	process
+	{		       
+		if ($file -is [System.IO.FileSystemInfo])
+		{
+			$filePath = $file.FullName
+		}
+		elseif ($file -is [string]) {
+			$filePath = $file
+		}
+		else {
+			throw "Unsuported type for -file"
+		}
 
-    $result = Invoke-PBIRequest -authToken $authToken -method Post -resource "imports?datasetDisplayName=$dataSetName&nameConflict=$nameConflict" `
-        -ContentType "multipart/form-data; boundary=--$boundary" -Body $bodyLines
+		$fileName = [uri]::EscapeDataString([IO.Path]::GetFileName($filePath))
 	
-	Write-Output $result
+        $reportDataSetName = $dataSetName
+
+		if ([string]::IsNullOrEmpty($dataSetName))
+		{
+			$reportDataSetName = $fileName
+		}			    			
+		
+		$boundary = [System.Guid]::NewGuid().ToString("N")   
+			
+		$fileBin = [IO.File]::ReadAllBytes($filePath)	      
+		
+		$enc = [System.Text.Encoding]::GetEncoding("iso-8859-1")
+		
+		$fileEnc = $enc.GetString($fileBin)	
+		
+		$LF = [System.Environment]::NewLine
+		
+		$bodyLines = (
+			"--$boundary",
+			"Content-Disposition: form-data; name=`"file0`"; filename=`"$fileName`"; filename*=UTF-8''$fileName",
+			"Content-Type: application/x-zip-compressed$LF",
+			$fileEnc,
+			"--$boundary--$LF"
+		) -join $LF			
+
+		$result = Invoke-PBIRequest -authToken $authToken -method Post -resource "imports?datasetDisplayName=$reportDataSetName&nameConflict=$nameConflict" `
+			-ContentType "multipart/form-data; boundary=--$boundary" -Body $bodyLines -groupId $groupId
+		
+		Write-Output $result
+	}    	
 }
 
 Function Export-PBIReport{
@@ -1249,7 +1308,8 @@ Function Export-PBIReport{
 		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$true, ValueFromPipeline = $true)] $report,
 		[Parameter(Mandatory=$false)] [string] $destinationFolder = ".",
-		[Parameter(Mandatory=$false)] [int] $timeout = 300
+		[Parameter(Mandatory=$false)] [int] $timeout = 300,
+		[Parameter(Mandatory=$false)] [string] $groupId
 	)
 
 	begin
@@ -1266,7 +1326,7 @@ Function Export-PBIReport{
 
 		Write-Verbose "Downloading report '$($report.id)' to '$destinationFolder\$($report.name).pbix"
 	
-		Invoke-PBIRequest -authToken $authToken -method Get -resource "reports/$($report.id)/Export" -TimeoutSec $timeout -OutFile "$destinationFolder\$($report.name).pbix" | Out-Null
+		Invoke-PBIRequest -authToken $authToken -method Get -groupId $groupId -resource "reports/$($report.id)/Export" -TimeoutSec $timeout -OutFile "$destinationFolder\$($report.name).pbix" | Out-Null
 	}    
 }
 
@@ -1276,98 +1336,63 @@ Function Copy-PBIReports{
 	Duplicate reports by suppling a list of the reports to copy.
 	Returns an object containing the new reports' metadata.
 .EXAMPLE
-	Copy-PBIReport -authToken $authToken -reportsObj $reportsObj
+	Get-PBIReport | Copy-PBIReport -authToken $authToken -targetWorkspaceId GUID -targetDataSetId GUID
 
 .PARAMETER AuthToken
     The authorization token required to comunicate with the PowerBI APIs
 	Use 'Get-PBIAuthToken' to get the authorization token string
 
-.PARAMETER ReportsObj
-	An hashtable with the following structure:
-
-	$reports = @(
-				@{
-					originalReportId = "7b32b78f-6336-4a2d-9b68-47w783f6c74e"
-					targetName = "Copied Report"
-					targetWorkspaceId = "2073317d-3bed-4165-916e-ca0aa2b95ed9"
-					targetModelId = "154f4378-b161-4a7e-a491-2523941d295c"
-				}
-			)
-	or
-	$reports = @(
-				@{
-					originalReportName = "Original Report"
-					targetName = "Copied Report"
-					targetWorkspaceName = "Some Workspace"
-					targetModelName = "Some Dataset"
-				}
-			)
-	
-	originalReportId or originalReportName - The id or name of the report to copy
-	targetName - (Opcional) The name of the new report. If not setted,it will use the same name as the original report.
-	targetWorkspaceId or targetWorkspaceName- (Opcional) The id or name of the destination workspace. If not setted, the copy will be made to the actual workspace.
-	targetModelId or targetWorkspaceName - (Opcional) The id or name of the dataset to bind the new report. Mandatory if targetWorkspaceId or targetWorkspaceName is setted.
-
+.PARAMETER report
+	The PBI Report Object or Report Id (GUID) 
+.PARAMETER targetName
+	Name of the report in the target workspace
+.PARAMETER targetWorkspaceId
+	Target workspace id (GUID)
+.PARAMETER targetModelId
+	Target dataset id (GUID)
 #>
 	[CmdletBinding()]		
 	param(									
-		[Parameter(Mandatory=$false)] [string] $authToken,
-		[Parameter(Mandatory=$false)] $reportsObj
+		[Parameter(Mandatory=$false)] [string] $authToken,		
+		[Parameter(Mandatory=$true, ValueFromPipeline = $true, ParameterSetName="default")] $report,
+		[Parameter(Mandatory=$false)] [string] $targetName,
+		[Parameter(Mandatory=$false)] [string] $targetWorkspaceId,
+		[Parameter(Mandatory=$false)] [string] $targetModelId,
+		[Parameter(Mandatory=$false)] [string] $groupId
 	)	
 
-	$reports = Get-PBIReport -authToken $authToken
-
-	$workspaces = Get-PBIGroup -authToken $authToken	
-
-	if ($reportsObj)
+	begin
 	{		
-		$reportsObj | ForEach-Object{
-		
-			$report = Find-ByIdOrName -items $reports -id $_.originalReportId -name $_.originalReportName
-			
-			if ($report.Count -ne 0)
-			{
-				if (-not [string]::IsNullOrEmpty($_.targetName)){
-					$bodyObj = @{name=$_.targetName}
-				}
-				else{
-					$bodyObj = @{name=$report.name}
-				}
-
-				if (($_.targetWorkspaceId -or $_.targetWorkspaceName) -and ($_.targetModelId -or $_.targetModelName)){
-
-					$workspace = Find-ByIdOrName -items $workspaces -id $_.targetWorkspaceId -name $_.targetWorkspaceName
-					
-					if ($workspace.Count -ne 0)
-					{
-						$workspaceDatasets = Get-PBIGroupDatasets -authToken $authToken -groupId $workspace.id
-
-						$dataset = Find-ByIdOrName -items $workspaceDatasets -id $_.targetModelId -name $_.targetModelName
-
-						if ($dataset.Count -ne 0){
-							$bodyObj.targetWorkspaceId = $workspace.id
-							$bodyObj.targetModelId = $dataset.id
-						}
-						else {
-							throw "Cannot find dataset '$($_.targetModelId)/$($_.targetModelName)'"
-						}
-					}
-					else
-					{
-						throw "Cannot find workspace '$($_.targetWorkspaceId)/$($_.targetWorkspaceName)'"
-					}
-				}				
-
-                $res = Invoke-PBIRequest -authToken $authToken -method Post -resource "reports/$($report.id)/Clone" -Body ($bodyObj | ConvertTo-Json)
-
-				Write-Output $res				
-			}
-			else
-			{
-				throw "Cannot find report '$($_.reportName)'"
-			}
-		}		
 	}
+	process
+	{	
+		if ($report -is [string])
+		{			
+			$report = Get-PBIReport -authToken $authToken -id $report -groupId $groupId
+		}		
+
+		if ($report)
+		{
+			if ([string]::IsNullOrEmpty($targetName)){
+				$targetName = $report.name
+			}			
+			
+			$bodyObj = @{
+				name=$targetName
+				;
+				targetWorkspaceId = $targetWorkspaceId
+				;				
+				targetModelId = $targetModelId
+			}
+
+			$res = Invoke-PBIRequest -authToken $authToken -method Post -groupId $groupId -resource "reports/$($report.id)/Clone" -Body ($bodyObj | ConvertTo-Json)
+
+			Write-Output $res	
+		}
+		else {
+			throw "Cannot find report '$report'"
+		}				
+	}     	
 }
 
 
@@ -1637,21 +1662,25 @@ Function Update-PBIDatasetDatasources {
 .PARAMETER TargetDatabase
     New database.
 .EXAMPLE
-    Update-PBIDatasetDatasources -datasetId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -datasourceType AnalysisServices -originalServer "asazure://eastus.asazure.windows.net/myssas" -originalDatabase  "wideworldimporters" -targetServer  "asazure://eastus.asazure.windows.net/myssas" -targetDatabase "wideworldimporters2"
+	Update-PBIDatasetDatasources -dataset xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -datasourceType AnalysisServices -originalServer "asazure://eastus.asazure.windows.net/myssas" -originalDatabase  "wideworldimporters" -targetServer  "asazure://eastus.asazure.windows.net/myssas" -targetDatabase "wideworldimporters2"
+.EXAMPLE
+	Get-PBIDataSet -name "DS Name" | Update-PBIDatasetDatasources -datasourceType AnalysisServices -originalServer "asazure://eastus.asazure.windows.net/myssas" -originalDatabase  "wideworldimporters" -targetServer  "asazure://eastus.asazure.windows.net/myssas" -targetDatabase "wideworldimporters2"
+	
 #>
 	[CmdletBinding()]
 	param(
 		[Parameter(Mandatory=$false)] [string] $authToken,
-		[Parameter(Mandatory=$true)] $datasetId,
+		[Parameter(Mandatory=$true, ValueFromPipeline = $true)] $dataset,
 		[Parameter(Mandatory=$true)] $datasourceType,
 		[Parameter(Mandatory=$true)] $originalServer,
 		[Parameter(Mandatory=$true)] $originalDatabase,
 		[Parameter(Mandatory=$true)] $targetServer,
 		[Parameter(Mandatory=$true)] $targetDatabase
 	)
-  
-	
-	$body = @"
+  		
+	begin {
+
+		$body = @"
 { 
   "updateDetails":[ 
     { 
@@ -1673,29 +1702,44 @@ Function Update-PBIDatasetDatasources {
   ] 
 } 
 "@
+	}
+	process
+	{		          
+		if ($dataset -is [string])
+		{			
+			$dataset = Get-PBIDataSet -authToken $authToken -id $dataset
+		}	
 
-    # documentation at https://msdn.microsoft.com/en-us/library/mt814715.aspx
+		# documentation at https://msdn.microsoft.com/en-us/library/mt814715.aspx
 
-    Invoke-PBIRequest -authToken $authToken -method Post -resource "datasets/$datasetId/updatedatasources" -Body $body		
+		Invoke-PBIRequest -authToken $authToken -method Post -resource "datasets/$($dataset.id)/updatedatasources" -Body $body
 
+	} 
 }
 
 Function Get-PBIDatasources{
 <#
 .SYNOPSIS    
-	Gets DataSet connections
-		
-
+	Gets DataSet connections	
 #>
-	[CmdletBinding()]		
+	[CmdletBinding()][Alias("Update-PBIDataset")]		
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
-		[Parameter(Mandatory=$true)] [string] $dataSetId
+		[Parameter(Mandatory=$true, ValueFromPipeline = $true)] $dataset
 	)
-    
-    $result = Invoke-PBIRequest -authToken $authToken -method Get -resource "datasets/$dataSetId/dataSources" -Body $body
 
-    Write-Output $result			
+	begin {}
+	process
+	{		          
+		if ($dataset -is [string])
+		{			
+			$dataset = Get-PBIDataSet -authToken $authToken -id $dataset
+		}	
+
+		$result = Invoke-PBIRequest -authToken $authToken -method Get -resource "datasets/$($dataset.id)/dataSources"
+
+    	Write-Output $result
+	} 		
 }
 
 Function Invoke-PBIRequest{
@@ -1709,12 +1753,13 @@ Function Invoke-PBIRequest{
 		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$true)] [string] $resource,
         [Parameter(Mandatory=$false)] [ValidateSet('Get','Post','Delete', 'Put')] [string] $method = "Get",
-        [Parameter(Mandatory=$false)] $body,
-        [Parameter(Mandatory=$false)] [switch] $ignoreGroup = $false,
+        [Parameter(Mandatory=$false)] $body,        
         [Parameter(Mandatory=$false)] [ValidateSet('Individual','Admin')] [string] $scope = "Individual",
         [Parameter(Mandatory=$false)] [string] $contentType = "application/json",
         [Parameter(Mandatory=$false)] [int] $timeoutSec = 240,
-        [Parameter(Mandatory=$false)] [string] $outFile
+        [Parameter(Mandatory=$false)] [string] $outFile,
+		[Parameter(Mandatory=$false)] [string] $groupId,
+		[switch]$ignoreGroup = $false
 	)
 	  	
     if ([string]::IsNullOrEmpty($authToken))
@@ -1727,13 +1772,26 @@ Function Invoke-PBIRequest{
 		'Authorization'= "Bearer $authToken"
 		}    
 
+	if (!$ignoreGroup)
+	{
+		if (![string]::IsNullOrEmpty($groupId))
+		{
+			$resource = "groups/$groupId/$resource"
+		}		
+		elseif (![string]::IsNullOrEmpty($script:pbiGroupId))
+		{
+			$resource = "groups/$script:pbiGroupId/$resource"
+		}
+	}
+
+	$resource = "$script:pbiAPIUrl/$resource"
+
     try
     {
-
-        $result = Invoke-RestMethod -Uri (Get-PowerBIRequestUrl -scope $resource -ignoreGroup:$ignoreGroup) -Headers $headers -Method $method -Body ($body) -ContentType $contentType `
+        $result = Invoke-RestMethod -Uri $resource -Headers $headers -Method $method -Body $body -ContentType $contentType `
             -TimeoutSec $timeoutSec -OutFile $outFile        
-
-		if ($result.value)
+		
+		if ($result -ne $null -and $result.PSObject.Properties['value'])
 		{
 			Write-Output $result.value
 		}
@@ -1747,16 +1805,30 @@ Function Invoke-PBIRequest{
 
         try
         {
-            $stream = $_.Exception.Response.GetResponseStream()
+			if ($ex.Response -ne $null)
+			{
+				$stream = $ex.Response.GetResponseStream()
 
-            $reader = New-Object System.IO.StreamReader($stream)
+				$reader = New-Object System.IO.StreamReader($stream)
 
-            $errorContent = $reader.ReadToEnd()
-          
-            $message = "$($ex.Message) - '$errorContent'"
+                $reader.BaseStream.Position = 0
+
+                $reader.DiscardBufferedData()
+
+				$errorContent = $reader.ReadToEnd()
+			
+				$message = "$($ex.Message) - '$errorContent'"
+			}
+			else {
+				$message = "$($ex.Message) - 'Empty'"
+			}
 
             Write-Error -Exception $ex -Message $message
-        }
+		}
+		catch
+		{
+			throw;
+		}
         finally
         {
             if ($reader) { $reader.Dispose() }
@@ -1767,33 +1839,6 @@ Function Invoke-PBIRequest{
 }
 
 #region Private Methods
-
-Function Get-PowerBIRequestUrl{	
-	[CmdletBinding()]	
-	param(													
-		[Parameter(Mandatory=$true)] [string] $scope,				
-		[Parameter(Mandatory=$false)] [switch] $ignoreGroup = $false	
-	)
-					
-	$groupId = $script:pbiGroupId
-
-	if ($ignoreGroup)
-	{
-		$groupId = $null
-	}
-
-	if ([string]::IsNullOrEmpty($groupId))
-	{
-		return "$script:pbiAPIUrl/$scope"
-	}
-	else
-	{
-		return "$script:pbiAPIUrl/groups/$groupId/$scope"
-	}
-	
-}
-
-
 
 Function ConvertTo-PBIJson{
 	param(		
@@ -1859,9 +1904,7 @@ Function ConvertTo-PBITableFromDataTable($table)
 	$pbiTable = @{ 
 		name = $table.TableName
 		; columns = $table.Columns |% {
-			$column = $_
-			
-			$columnTypeName = $column.DataType.Name
+			$column = $_		
 			
 			$pbiTypeName = ConvertTo-PBIDataType $column.DataType.Name 		
 											

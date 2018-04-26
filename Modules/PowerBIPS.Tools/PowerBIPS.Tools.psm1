@@ -22,32 +22,23 @@ THE SOFTWARE.
 
 #>
 
-Function Convert-PowerBIToASTabular
-{ 
-    <#
-        .SYNOPSIS
-        Convert Model PBI to Tabular Analysis Services
-        .DESCRIPTION
-        Function that converts PowerBI model to Tabular Analysis Services.
-        It can be done in two ways:
-        Open PowerBi and capture the window name or give path to a pbiT template
-        This model required dll: "Microsoft.AnalysisServices.Tabular".
-        .PARAMETER pbiDesktopWindowName
-        Window Name PowerBI desktop
-        .PARAMETER pbiDesktopPbiTemplatePath
-	    Path to PowerBI Template
-        .PARAMETER outputFile
-        This is path to file "Model.bim" from Visual Studio Project
-        .PARAMETER removeInternalPBITables
-        This remove internal tables like "Localdate_XXXXXX"
-        .EXAMPLE OF PARAMETERS
-        #$parameters = @(@{parameterName = "DataFolder" ;value= "'c:\'"},@{parameterName = "DataFolder" ;value= "'c:\'"})
-        .EXAMPLE
-        Convert-PowerBIToAS -pbiDesktopWindowName "*VanArsdel*" -outputFile "C:\...\Model.bim" -removeInternalPBITables $true
-        .EXAMPLE
-	    Convert-PowerBIToAS -pbiDesktopPbiTemplatePath "C:\...\VanArsdel.pbit" -outputFile "C:\...\Model.bim" -removeInternalPBITables $true
-    #> 
-          
+Function Convert-PowerBIDesktopToASTabular{ 
+<#
+.SYNOPSIS
+A quick way to convert a Power BI Desktop file into an Analysis Services Tabular Project
+.DESCRIPTION
+A quick way to convert a Power BI Desktop file into an Analysis Services Tabular Project
+.PARAMETER pbiDesktopWindowName
+Power BI Desktop window name, wildcards can be used. Ex: "*name*"
+.PARAMETER pbiDesktopPbiTemplatePath
+Path to PowerBI Template
+.PARAMETER outputPath
+Path to the output folder
+.PARAMETER removeInternalPBITables
+This remove internal tables like "Localdate_XXXXXX"
+.EXAMPLE
+Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -outputPath ".\SSASProj"
+#>
     [CmdletBinding()] 
     param
     (
@@ -128,11 +119,10 @@ Function Convert-PowerBIToASTabular
             
             $table = $_
 
-            if($removeInternalPBITables){
-
-              $table.Columns |% {$_.Variations.Clear()}
-
-             }
+            if($removeInternalPBITables)
+            {
+                $table.Columns |% {$_.Variations.Clear()}
+            }
 
             $table.Partitions |% {
 
@@ -144,35 +134,37 @@ Function Convert-PowerBIToASTabular
 
                     $mExpression = Get-MCodeFromPBIDataSource $partition
                     
-                    if ($mExpression[0].hiddenTable -eq $false ){
-                    
+                    if ($mExpression[0].hiddenTable -eq $false )
+                    {                    
                         $mExpression = $mExpression.expression
+                    }
+                    else
+                    {                        
+                       foreach($obj in $mExpression) 
+                       {
+                            if ($obj.name.Trim() -eq $table.Name.Trim()) 
+                            { 
+                                $mExpression = $obj.expression 
+                            }                            
+                            else 
+                            {
+                                $exist = $database.Model.Expressions |? { $_.Name.Trim() -eq $obj.name.Trim() }
 
-                    }else{
-                        
-                       foreach($obj in $mExpression) {
+                                if ($exist.Count -eq 0 -and -not($obj.name.Trim().Contains("QueryBinding")))
+                                {
+                                    $ex = new-object Microsoft.AnalysisServices.Tabular.NamedExpression
 
-                             if ($obj.name.Trim() -eq $table.Name.Trim()) { $mExpression = $obj.expression }
-                             
-                             else {
-                                  $exist = $database.Model.Expressions | where { $_.Name.Trim() -eq $obj.name.Trim() }
+                                    $ex.Name = $obj.name.Trim()
 
-                                  if ($exist.Count -eq 0 -and -not($obj.name.Trim().Contains("QueryBinding"))){
+                                    $ex.Kind = new-object Microsoft.AnalysisServices.Tabular.ExpressionKind
 
-                                      $ex = new-object Microsoft.AnalysisServices.Tabular.NamedExpression
+                                    $ex.Description = ""
 
-                                      $ex.Name = $obj.name.Trim()
+                                    $ex.Expression = $obj.expression
 
-                                      $ex.Kind = new-object Microsoft.AnalysisServices.Tabular.ExpressionKind
-
-                                      $ex.Description = ""
-
-                                      $ex.Expression = $obj.expression
-
-                                      $database.Model.Expressions.Add($ex)
-
-                                     } 
-                                  }                          
+                                    $database.Model.Expressions.Add($ex)
+                                } 
+                            }                          
                         }
                        
                     }                
@@ -209,11 +201,13 @@ Function Convert-PowerBIToASTabular
                   <PropertyGroup>
                     <Configuration Condition="" '`$(Configuration)' == '' "">Production</Configuration>
                     <SchemaVersion>2.0</SchemaVersion>
-                    <ProjectGuid>{$projectId}</ProjectGuid>
-                    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+                    <ProjectGuid>{$projectId}</ProjectGuid>              
                     <OutputPath>bin\</OutputPath>
                     <Name>SSASProject</Name>
-                  </PropertyGroup>  
+                  </PropertyGroup> 
+                  <PropertyGroup Condition="" '`$(Configuration)' == 'Development' "">
+                        <OutputPath>bin\</OutputPath>                        
+                    </PropertyGroup> 
                   <ItemGroup>
                     <Compile Include=""Model.bim"">
                       <SubType>Code</SubType>
@@ -234,7 +228,21 @@ Function Convert-PowerBIToASTabular
 }
 
 Function Export-PBIDesktopToCSV
-{      
+{
+<#
+.SYNOPSIS
+A way to export all your Power BI Desktop model tables into CSV files
+.DESCRIPTION
+A way to export all your Power BI Desktop model tables into CSV files
+.PARAMETER pbiDesktopWindowName
+Power BI Desktop window name, wildcards can be used. Ex: "*name*"
+.PARAMETER tables
+The tables to be exported - if empty all the tables get exported
+.PARAMETER outputPath
+Path to the output folder
+.EXAMPLE
+Export-PBIDesktopToCSV -pbiDesktopWindowName "*Van Arsdel*" -outputPath ".\CSVOutput"
+#>
     [CmdletBinding()]
 	param(		        
         [Parameter(Mandatory = $true)]        
@@ -276,11 +284,9 @@ Function Export-PBIDesktopToCSV
         try
         {
             
-		    $daxTableName = $_				
+		    $daxTableName = $_							    
 		
-		    $sqlTableName = "[$sqlSchema].[$daxTableName]"
-		
-		    Write-Verbose "Moving data from '$daxTableName' into '$sqlTableName'"
+		    Write-Verbose "Moving data from '$daxTableName' into CSV File"
 		
 		    $reader = Invoke-SQLCommand -providerName "System.Data.OleDb" -connectionString $ssasConnStr `
 			    -executeType "Reader" -commandText "EVALUATE('$daxTableName')" 
@@ -291,9 +297,7 @@ Function Export-PBIDesktopToCSV
 
             $textWriter = New-Object System.IO.StreamWriter($tableCsvPath, $false, [System.Text.Encoding]::UTF8)
 
-            $csvWriter = New-Object CsvHelper.CsvWriter($textWriter)
-       
-            $hasHeaderBeenWritten = $false;
+            $csvWriter = New-Object CsvHelper.CsvWriter($textWriter)                   
   
             $csvWriter.Configuration.CultureInfo.NumberFormat.NumberDecimalSeparator="."
 
@@ -372,6 +376,22 @@ Function Export-PBIDesktopToCSV
 
 Function Export-PBIDesktopToSQL
 {      
+<#
+.SYNOPSIS
+A way to export all your Power BI Desktop model tables into a SQL Server Database
+.DESCRIPTION
+A way to export all your Power BI Desktop model tables into a SQL Server Database
+.PARAMETER pbiDesktopWindowName
+Power BI Desktop window name, wildcards can be used. Ex: "*name*"
+.PARAMETER tables
+The tables to be exported - if empty all the tables get exported
+.PARAMETER sqlConnStr
+The SQL Server connection string
+.PARAMETER sqlSchema
+The target sql server schema where all the tables will be created (if not exists)
+.EXAMPLE
+Export-PBIDesktopToSQL -pbiDesktopWindowName "*Van Arsdel*" -sqlConnStr "Data Source=.\sql2017; Initial Catalog=Dummy; Integrated Security=true" -sqlSchema "stg" -Verbose
+#>
     [CmdletBinding()]
     param
     (
@@ -440,6 +460,16 @@ Function Export-PBIDesktopToSQL
 
 Function Get-PBIDesktopTCPPort
 {  
+<#
+.SYNOPSIS
+Returns the Power BI Desktop Analysis Services Instance TCP Port
+.DESCRIPTION
+Returns the Power BI Desktop Analysis Services Instance TCP Port
+.PARAMETER pbiDesktopWindowName
+Power BI Desktop window name, wildcards can be used. Ex: "*name*"
+.EXAMPLE
+Get-PBIDesktopTCPPort -pbiDesktopWindowName "*VanArsdel - Sales*"
+#>
 	[CmdletBinding()]
     param
     (
@@ -541,7 +571,6 @@ Function Get-ZipSection ($bytes, [string] $entryName, [System.Text.Encoding] $en
         if ($ms) { $ms.Dispose() }
     }         
 }
-
 Function Get-CleanMCode{    
     param
     (
@@ -549,6 +578,7 @@ Function Get-CleanMCode{
 		[string]
         $mcode 
     )
+
     $colletion = @()
     $hiddenTable = $mcode -split "shared"
 

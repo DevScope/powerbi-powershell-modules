@@ -7,9 +7,12 @@ Modules/PowerBIPS/PublishToGallery.ps1
 Modules/PowerBIPS/Publish/*
 Modules/PowerBIPS/Samples/*test*.ps1
 Modules/PowerBIPS/Samples/PowerBIPS.TestChangeConnection.ps1
+Modules/PowerBIPS/GenerateDocs.ps1
+
 Modules/PowerBIPS.Tools/Samples/*
 Modules/PowerBIPS.Tools/Publish/*
 Modules/PowerBIPS.Tools/PublishToGallery.ps1
+Modules/PowerBIPS.Tools/GenerateDocs.ps1
 
 Modules/PowerBIETL/Publish/*
 Modules/PowerBIETL/PublishToGallery.ps1

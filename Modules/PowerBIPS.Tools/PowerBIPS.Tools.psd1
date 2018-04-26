@@ -48,6 +48,7 @@ RequiredModules = @("SQLHelper")
  , ".\Microsoft.AnalysisServices.Core.dll"
  , ".\Microsoft.AnalysisServices.SPClient.Interfaces.dll"
  , ".\Microsoft.AnalysisServices.Tabular.Json.dll" 
+ ".\CsvHelper.dll"
  )
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
@@ -64,7 +65,7 @@ RequiredModules = @("SQLHelper")
 
 # Functions to export from this module
 FunctionsToExport = @(
-	"Get-PBIDesktopTCPPort", "Convert-PowerBIToASTabular", "Export-PBIDesktopToSQL", "Export-PBIDesktopToCSV"
+	"Get-PBIDesktopTCPPort", "Convert-PowerBIDesktopToASTabular", "Export-PBIDesktopToSQL", "Export-PBIDesktopToCSV"
 )
 
 # Cmdlets to export from this module
@@ -84,7 +85,9 @@ FileList = @("Microsoft.AnalysisServices.Core.dll"
 , "Microsoft.AnalysisServices.dll"
 , "Microsoft.AnalysisServices.SPClient.Interfaces.dll"
 , "Microsoft.AnalysisServices.Tabular.dll"
-, "Microsoft.AnalysisServices.Tabular.Json.dll")
+, "Microsoft.AnalysisServices.Tabular.Json.dll"
+, "CsvHelper.dll"
+)
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{
