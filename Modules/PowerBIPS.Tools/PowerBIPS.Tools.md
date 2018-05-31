@@ -43,15 +43,15 @@ $dataSetSchema = New-PBIDataSet -authToken $authToken -dataSet $dataSetSchema -i
 ```
 
 ## PowerBIPS.Tools Cmdlets
-### [Convert-PowerBIDesktopToASTabular](doc\Convert-PowerBIDesktopToASTabular.md)
+### [Convert-PowerBIDesktopToASTabular](doc/Convert-PowerBIDesktopToASTabular.md)
 Convert from a Power BI Desktop into AS Tabular Project
 
-### [Export-PBIDesktopToCSV](doc\Export-PBIDesktopToCSV.md)
+### [Export-PBIDesktopToCSV](doc/Export-PBIDesktopToCSV.md)
 Exports the tables from a Power BI Desktop model into CSV files
 
-### [Export-PBIDesktopToSQL](doc\Export-PBIDesktopToSQL.md)
+### [Export-PBIDesktopToSQL](doc/Export-PBIDesktopToSQL.md)
 Exports the tables from a Power BI Desktop model into a SQL Server Database (automatically creates the tables)
 
-### [Get-PBIDesktopTCPPort](doc\Get-PBIDesktopTCPPort.md)
+### [Get-PBIDesktopTCPPort](doc/Get-PBIDesktopTCPPort.md)
 Discover the TCP Port of the Analysis Services instance on Power BI Desktop
 

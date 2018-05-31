@@ -12,14 +12,14 @@ https://www.powershellgallery.com/packages/PowerBIPS
 
 Install-Module -Name PowerBIPS
 
-## [PowerBIPS.Tools](Modules\PowerBIPS.Tools\PowerBIPS.Tools.md)
+## [PowerBIPS.Tools](Modules/PowerBIPS.Tools/PowerBIPS.Tools.md)
 
 This module is a collection of very useful tools for Power BI.
 
 A PowerShell module with utility functions, for example:
 
-* [Get-PBIDesktopTCPPort](Modules\PowerBIPS.Tools\doc\Get-PBIDesktopTCPPort.md) - Get the Power BI Desktop TCP Port
-* [Export-PBIDesktopToCSV](Modules\PowerBIPS.Tools\doc\Export-PBIDesktopToCSV.md) - Export data from Power BI Desktop to CSV
+* [Get-PBIDesktopTCPPort](Modules/PowerBIPS.Tools/doc/Get-PBIDesktopTCPPort.md) - Get the Power BI Desktop TCP Port
+* [Export-PBIDesktopToCSV](Modules/PowerBIPS.Tools/doc/Export-PBIDesktopToCSV.md) - Export data from Power BI Desktop to CSV
 
 Available on PowerShell Gallery:
 

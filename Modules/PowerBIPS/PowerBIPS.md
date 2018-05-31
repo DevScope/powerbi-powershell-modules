@@ -148,96 +148,96 @@ $counters | Get-Counter -Continuous -SampleInterval 5 |%{
 ```
 
 ## PowerBIPS Cmdlets
-### [Add-PBITableRows](doc\Add-PBITableRows.md)
+### [Add-PBITableRows](doc/Add-PBITableRows.md)
 
 
-### [Clear-PBITableRows](doc\Clear-PBITableRows.md)
+### [Clear-PBITableRows](doc/Clear-PBITableRows.md)
 
 
-### [Copy-PBIReports](doc\Copy-PBIReports.md)
+### [Copy-PBIReports](doc/Copy-PBIReports.md)
 
 
-### [Export-PBIReport](doc\Export-PBIReport.md)
+### [Export-PBIReport](doc/Export-PBIReport.md)
 
 
-### [Get-PBIAuthToken](doc\Get-PBIAuthToken.md)
+### [Get-PBIAuthToken](doc/Get-PBIAuthToken.md)
 
 
-### [Get-PBIDashboard](doc\Get-PBIDashboard.md)
+### [Get-PBIDashboard](doc/Get-PBIDashboard.md)
 
 
-### [Get-PBIDashboardTile](doc\Get-PBIDashboardTile.md)
+### [Get-PBIDashboardTile](doc/Get-PBIDashboardTile.md)
 
 
-### [Get-PBIDataSet](doc\Get-PBIDataSet.md)
+### [Get-PBIDataSet](doc/Get-PBIDataSet.md)
 
 
-### [Get-PBIDatasetParameters](doc\Get-PBIDatasetParameters.md)
+### [Get-PBIDatasetParameters](doc/Get-PBIDatasetParameters.md)
 
 
-### [Get-PBIDatasetRefreshHistory](doc\Get-PBIDatasetRefreshHistory.md)
+### [Get-PBIDatasetRefreshHistory](doc/Get-PBIDatasetRefreshHistory.md)
 
 
-### [Get-PBIDataSetTables](doc\Get-PBIDataSetTables.md)
+### [Get-PBIDataSetTables](doc/Get-PBIDataSetTables.md)
 
 
-### [Get-PBIDatasources](doc\Get-PBIDatasources.md)
+### [Get-PBIDatasources](doc/Get-PBIDatasources.md)
 
 
-### [Get-PBIGroup](doc\Get-PBIGroup.md)
+### [Get-PBIGroup](doc/Get-PBIGroup.md)
 
 
-### [Get-PBIGroupUsers](doc\Get-PBIGroupUsers.md)
+### [Get-PBIGroupUsers](doc/Get-PBIGroupUsers.md)
 
 
-### [Get-PBIImports](doc\Get-PBIImports.md)
+### [Get-PBIImports](doc/Get-PBIImports.md)
 
 
-### [Get-PBIModuleConfig](doc\Get-PBIModuleConfig.md)
+### [Get-PBIModuleConfig](doc/Get-PBIModuleConfig.md)
 
 
-### [Get-PBIReport](doc\Get-PBIReport.md)
+### [Get-PBIReport](doc/Get-PBIReport.md)
 
 
-### [Import-PBIFile](doc\Import-PBIFile.md)
+### [Import-PBIFile](doc/Import-PBIFile.md)
 
 
-### [Invoke-PBIRequest](doc\Invoke-PBIRequest.md)
+### [Invoke-PBIRequest](doc/Invoke-PBIRequest.md)
 
 
-### [New-PBIDataSet](doc\New-PBIDataSet.md)
+### [New-PBIDataSet](doc/New-PBIDataSet.md)
 
 
-### [New-PBIGroup](doc\New-PBIGroup.md)
+### [New-PBIGroup](doc/New-PBIGroup.md)
 
 
-### [New-PBIGroupUser](doc\New-PBIGroupUser.md)
+### [New-PBIGroupUser](doc/New-PBIGroupUser.md)
 
 
-### [Out-PowerBI](doc\Out-PowerBI.md)
+### [Out-PowerBI](doc/Out-PowerBI.md)
 
 
-### [Request-PBIDatasetRefresh](doc\Request-PBIDatasetRefresh.md)
+### [Request-PBIDatasetRefresh](doc/Request-PBIDatasetRefresh.md)
 
 
-### [Set-PBIDatasetParameters](doc\Set-PBIDatasetParameters.md)
+### [Set-PBIDatasetParameters](doc/Set-PBIDatasetParameters.md)
 
 
-### [Set-PBIGroup](doc\Set-PBIGroup.md)
+### [Set-PBIGroup](doc/Set-PBIGroup.md)
 
 
-### [Set-PBIModuleConfig](doc\Set-PBIModuleConfig.md)
+### [Set-PBIModuleConfig](doc/Set-PBIModuleConfig.md)
 
 
-### [Set-PBIReportsDataset](doc\Set-PBIReportsDataset.md)
+### [Set-PBIReportsDataset](doc/Set-PBIReportsDataset.md)
 
 
-### [Test-PBIDataSet](doc\Test-PBIDataSet.md)
+### [Test-PBIDataSet](doc/Test-PBIDataSet.md)
 
 
-### [Update-PBIDatasetDatasources](doc\Update-PBIDatasetDatasources.md)
+### [Update-PBIDatasetDatasources](doc/Update-PBIDatasetDatasources.md)
 
 
-### [Update-PBITableSchema](doc\Update-PBITableSchema.md)
+### [Update-PBITableSchema](doc/Update-PBITableSchema.md)
 
 
