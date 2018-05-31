@@ -2,7 +2,7 @@
 
 This github repository is a collection of PowerShell modules for the Power BI platform.
 
-## [PowerBIPS](Modules\PowerBIPS\PowerBIPS.md)
+## [PowerBIPS](Modules/PowerBIPS/PowerBIPS.md)
 
 A PowerShell module for the Power BI Developer REST API
 

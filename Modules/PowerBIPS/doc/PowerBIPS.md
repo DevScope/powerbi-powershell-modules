@@ -68,6 +68,9 @@ Locale: en-US
 ### [Invoke-PBIRequest](Invoke-PBIRequest.md)
 {{Manually Enter Invoke-PBIRequest Description Here}}
 
+### [New-PBIDashboard](New-PBIDashboard.md)
+{{Manually Enter New-PBIDashboard Description Here}}
+
 ### [New-PBIDataSet](New-PBIDataSet.md)
 {{Manually Enter New-PBIDataSet Description Here}}
 

@@ -69,7 +69,7 @@ FunctionsToExport = @(
     , "Get-PBIDatasetParameters", "Set-PBIDatasetParameters"
 	, "Add-PBITableRows", "Clear-PBITableRows", "Update-PBITableSchema"	
 	, "Get-PBIImports", "Import-PBIFile"
-	, "Get-PBIDashboard", "Get-PBIDashboardTile"
+	, "Get-PBIDashboard", "Get-PBIDashboardTile", "New-PBIDashboard"
 	, "Get-PBIReport", "Export-PBIReport", "Copy-PBIReports", "Set-PBIReportsDataset"
     , "Get-PBIDatasources", "Invoke-PBIRequest", "Get-PBIModuleConfig", "Set-PBIModuleConfig"    
 )
