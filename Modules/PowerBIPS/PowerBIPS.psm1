@@ -1284,11 +1284,6 @@ Function Import-PBIFile{
 			
     $scope = "imports?datasetDisplayName=$dataSetName&nameConflict=$nameConflict"
 
-	if (-not [string]::IsNullOrEmpty($groupId))
-	{
-        $scope = "groups/$groupId/$scope";
-    }
-			
 	$url = Get-PowerBIRequestUrl -scope $scope -beta
 	
 	$boundary = [System.Guid]::NewGuid().ToString("N")   
