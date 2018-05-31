@@ -453,6 +453,58 @@ Function Get-PBIReport{
 		Write-Output $reports
 }
 
+Function Set-PBIReportContent{
+<#
+.SYNOPSIS    
+	Replaces a target reports content with content from another source report in the same or different workspace
+.DESCRIPTION
+	Replaces a target reports content with content from another source report in the same or different workspace
+.PARAMETER AuthToken
+	The authorization token required to communicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.PARAMETER report
+	The PBI Report Object or Report Id (GUID)
+.PARAMETER targetReportId
+	The target report id that content will get overwriten
+.PARAMETER targetGroupId
+	The target report workspace id
+.EXAMPLE
+	$sourceReport = Get-PBIReport -name "SourceReportName"
+	$targetReport = Get-PBIReport -name "TargetReportName"
+	$sourceReport | Set-PBIReportContent -targetReportId $targetReport.id
+#>
+		[CmdletBinding()]		
+		param(									
+			[Parameter(Mandatory=$false)] [string] $authToken,
+			[Parameter(Mandatory=$true, ValueFromPipeline = $true)] $report,
+			[Parameter(Mandatory=$false)] [string] $groupId,
+			[Parameter(Mandatory=$true)] [string] $targetReportId,
+			[Parameter(Mandatory=$false)] [string] $targetGroupId		
+		)
+	begin{
+
+	}	
+	process
+	{
+		if ($report -is [string])
+		{			
+			$report = Get-PBIReport -authToken $authToken -id $report -groupId $groupId
+		}	
+
+		$bodyObj = @{
+			sourceType="ExistingReport"
+			sourceReport=@{
+				sourceReportId = $report.id
+				sourceWorkspaceId = $groupId
+			}
+		}
+
+		$targetReport = Get-PBIReport -groupId $targetGroupId -id $targetReportId
+
+		Invoke-PBIRequest -authToken $authToken -method Post -groupId $groupId -resource "reports/$($targetReport.id)/UpdateReportContent" -Body ($bodyObj | ConvertTo-Json)		
+	}	
+}
+
 Function Get-PBIDashboard{
 <#
 .SYNOPSIS 
