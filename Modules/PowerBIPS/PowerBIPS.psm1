@@ -542,6 +542,42 @@ Function Get-PBIDashboardTile{
 	}   		
 }
 
+Function New-PBIDashboard{
+	<#
+	.SYNOPSIS
+		Create a new Dashboard
+	.DESCRIPTION	
+		Create a new Dashboard in PowerBI		
+	.PARAMETER AuthToken
+		The authorization token required to comunicate with the PowerBI APIs
+		Use 'Get-PBIAuthToken' to get the authorization token string
+	.PARAMETER GroupId
+		The id of the group in PowerBI
+	.PARAMETER Name
+		The name of the new dashboard
+	.EXAMPLE
+									
+			New-PBIDashboard -authToken $authToken -groupId $groupId
+			A new dashboard will be created and in case of success return the internal dashboard id
+	#>
+	[CmdletBinding()]	
+	param(									
+		[Parameter(Mandatory=$true)] [string] $authToken,		
+		[Parameter(Mandatory=$true)] [string] $name,
+		[Parameter(Mandatory=$false)] [string] $groupId
+	)						
+	
+	$jsonBody = ConvertTo-PBIJson -obj @{ name = $name }
+	
+	Write-Verbose "Creating new dashboard"	
+
+	$result = Invoke-PBIRequest -authToken $authToken -method Post -resource "dashboards" -Body $jsonBody -groupId $groupId
+	
+	Write-Verbose "Dashboard created with id: '$($result.id)"
+
+	Write-Output $result
+}
+
 Function Get-PBIDataSet{
 <#
 .SYNOPSIS    
@@ -2179,6 +2215,25 @@ function Find-ByIdOrName ($items, $id, $name) {
 		else {
 			Write-Output $items
 		}		
+}
+
+# https://stackoverflow.com/a/48154663
+function ParseErrorForResponseBody($Error) {
+    if ($PSVersionTable.PSVersion.Major -lt 6) {
+        if ($Error.Exception.Response) {  
+            $Reader = New-Object System.IO.StreamReader($Error.Exception.Response.GetResponseStream())
+            $Reader.BaseStream.Position = 0
+            $Reader.DiscardBufferedData()
+            $ResponseBody = $Reader.ReadToEnd()
+            if ($ResponseBody.StartsWith('{')) {
+                $ResponseBody = $ResponseBody | ConvertFrom-Json | ConvertTo-Json -Compress
+            }
+            return $ResponseBody
+        }
+    }
+    else {
+        return $Error.ErrorDetails.Message
+    }
 }
 
 #endregion
