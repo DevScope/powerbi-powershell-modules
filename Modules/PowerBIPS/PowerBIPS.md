@@ -240,4 +240,8 @@ $counters | Get-Counter -Continuous -SampleInterval 5 |%{
 
 ### [Update-PBITableSchema](doc/Update-PBITableSchema.md)
 
+### [Set-PBIReportContent](doc/Set-PBIReportContent.md)
+
+### [New-PBIDashboard](doc/New-PBIDashboard.md)
+
 

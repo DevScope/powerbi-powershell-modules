@@ -95,6 +95,9 @@ Locale: en-US
 ### [Set-PBIModuleConfig](Set-PBIModuleConfig.md)
 {{Manually Enter Set-PBIModuleConfig Description Here}}
 
+### [Set-PBIReportContent](Set-PBIReportContent.md)
+{{Manually Enter Set-PBIReportContent Description Here}}
+
 ### [Set-PBIReportsDataset](Set-PBIReportsDataset.md)
 {{Manually Enter Set-PBIReportsDataset Description Here}}
 
