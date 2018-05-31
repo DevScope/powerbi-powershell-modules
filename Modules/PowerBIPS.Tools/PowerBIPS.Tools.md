@@ -14,6 +14,14 @@ For example:
     - Convert from PBI Desktop into AS Tabular
     - Get a dataset schema from a Power BI Desktop file (to create a REST DataSet)
 
+Module also available on PowerShell Gallery:
+
+https://www.powershellgallery.com/packages/PowerBIPS.Tools
+
+To install just type:
+
+Install-Module -Name PowerBIPS.Tools
+
 ## Sample Script - Convert PBIX to AS Tabular
 
 ```powershell
