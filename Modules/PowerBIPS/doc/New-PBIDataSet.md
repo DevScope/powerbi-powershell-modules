@@ -8,17 +8,17 @@ schema: 2.0.0
 # New-PBIDataSet
 
 ## SYNOPSIS
-Create a new DataSet
+Create a new DataSet in PowerBI.com
 
 ## SYNTAX
 
 ```
 New-PBIDataSet [-authToken] <String> [-dataSet] <Object> [[-defaultRetentionPolicy] <String>]
- [[-types] <Hashtable>] [<CommonParameters>]
+ [[-types] <Hashtable>] [-ignoreIfDataSetExists] [[-groupId] <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Create a new DataSet in PowerBI
+Create a new DataSet in PowerBI.Com
 
 ## EXAMPLES
 
@@ -104,6 +104,36 @@ Aliases:
 
 Required: False
 Position: 4
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -ignoreIfDataSetExists
+Checks if the dataset exists before the creation
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: Named
+Default value: False
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -groupId
+Id of the workspace where the reports will get pulled
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 5
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False

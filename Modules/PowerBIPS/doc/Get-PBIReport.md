@@ -8,7 +8,7 @@ schema: 2.0.0
 # Get-PBIReport
 
 ## SYNOPSIS
-Gets all the PowerBI existing reports and returns as an array of custom objects.
+Gets an array of Power BI Report metadata from a workspace
 
 ## SYNTAX
 
@@ -18,24 +18,30 @@ Get-PBIReport [[-authToken] <String>] [[-name] <String>] [[-id] <String>] [[-gro
 ```
 
 ## DESCRIPTION
-{{Fill in the Description}}
+Gets an array of Power BI Report metadata from a workspace
 
 ## EXAMPLES
 
 ### EXAMPLE 1
 ```
-Get-PBIReport -authToken $authToken
+Get-PBIReport
 ```
 
 ### EXAMPLE 2
 ```
-Get-PBIReport -authToken $authToken	-id $id
+Get-PBIReport -id "GUID"
+```
+
+### EXAMPLE 3
+```
+Get-PBIReport -id "GUID" -groupId "GUID"
 ```
 
 ## PARAMETERS
 
 ### -authToken
-{{Fill authToken Description}}
+The authorization token required to communicate with the PowerBI APIs
+Use 'Get-PBIAuthToken' to get the authorization token string
 
 ```yaml
 Type: String
@@ -50,7 +56,7 @@ Accept wildcard characters: False
 ```
 
 ### -name
-{{Fill name Description}}
+The name of the report
 
 ```yaml
 Type: String
@@ -65,7 +71,7 @@ Accept wildcard characters: False
 ```
 
 ### -id
-{{Fill id Description}}
+The id of the report
 
 ```yaml
 Type: String
@@ -80,7 +86,7 @@ Accept wildcard characters: False
 ```
 
 ### -groupId
-{{Fill groupId Description}}
+Id of the workspace where the reports will get pulled
 
 ```yaml
 Type: String

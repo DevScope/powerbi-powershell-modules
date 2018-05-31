@@ -15,7 +15,7 @@ Update the datasource of a dataset
 ```
 Update-PBIDatasetDatasources [[-authToken] <String>] [-dataset] <Object> [-datasourceType] <Object>
  [-originalServer] <Object> [-originalDatabase] <Object> [-targetServer] <Object> [-targetDatabase] <Object>
- [<CommonParameters>]
+ [[-groupId] <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -139,6 +139,21 @@ Aliases:
 
 Required: True
 Position: 7
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -groupId
+{{Fill groupId Description}}
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 8
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False

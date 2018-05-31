@@ -14,12 +14,14 @@ Delete all the rows of a PowerBI dataset table
 
 ### dataSetId
 ```
-Clear-PBITableRows [-authToken <String>] -dataSetId <String> -tableName <String> [<CommonParameters>]
+Clear-PBITableRows [-authToken <String>] -dataSetId <String> -tableName <String> [-groupId <String>]
+ [<CommonParameters>]
 ```
 
 ### dataSetName
 ```
-Clear-PBITableRows [-authToken <String>] -dataSetName <String> -tableName <String> [<CommonParameters>]
+Clear-PBITableRows [-authToken <String>] -dataSetName <String> -tableName <String> [-groupId <String>]
+ [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -89,6 +91,21 @@ Parameter Sets: (All)
 Aliases:
 
 Required: True
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -groupId
+Id of the workspace where the reports will get pulled
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
 Position: Named
 Default value: None
 Accept pipeline input: False

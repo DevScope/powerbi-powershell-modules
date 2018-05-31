@@ -15,13 +15,13 @@ Add's a collection of rows into a powerbi dataset table in batches
 ### dataSetId
 ```
 Add-PBITableRows [-authToken <String>] -dataSetId <String> -tableName <String> -rows <Object>
- [-batchSize <Int32>] [<CommonParameters>]
+ [-batchSize <Int32>] [-groupId <String>] [<CommonParameters>]
 ```
 
 ### dataSetName
 ```
 Add-PBITableRows [-authToken <String>] -dataSetName <String> -tableName <String> -rows <Object>
- [-batchSize <Int32>] [<CommonParameters>]
+ [-batchSize <Int32>] [-groupId <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -135,6 +135,21 @@ Aliases:
 Required: False
 Position: Named
 Default value: 1000
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -groupId
+Id of the workspace where the reports will get pulled
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: Named
+Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

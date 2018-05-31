@@ -8,7 +8,7 @@ schema: 2.0.0
 # Set-PBIGroup
 
 ## SYNOPSIS
-Set's the scope to the group specified, after execution all the following PowerBIPS cmdlets will execute over the setted group.
+Set's the scope to the group specified, after execution all the following PowerBIPS cmdlets will execute over the defined group.
 
 ## SYNTAX
 
@@ -17,16 +17,19 @@ Set-PBIGroup [[-authToken] <String>] [[-id] <String>] [[-name] <String>] [-clear
 ```
 
 ## DESCRIPTION
-{{Fill in the Description}}
+Set's the scope to the group specified, after execution all the following PowerBIPS cmdlets will execute over the defined group.
 
 ## EXAMPLES
 
-### Example 1
-```powershell
-PS C:\> {{ Add example code here }}
+### EXAMPLE 1
+```
+Set-PBIGroup -id "GUID"
 ```
 
-{{ Add example description here }}
+### EXAMPLE 2
+```
+Set-PBIGroup -name "Group Name"
+```
 
 ## PARAMETERS
 

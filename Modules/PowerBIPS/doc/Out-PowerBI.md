@@ -16,14 +16,14 @@ A one line cmdlet that you can use to send data into PowerBI
 ```
 Out-PowerBI -Data <Object> [-AuthToken <String>] [-DataSetName <String>] [-TableName <String>]
  [-BatchSize <Int32>] [-MultipleTables] [-ForceAskCredentials] [-ForceTableSchemaUpdate] [-Types <Hashtable>]
- [<CommonParameters>]
+ [-groupId <String>] [<CommonParameters>]
 ```
 
 ### credential
 ```
 Out-PowerBI -Data <Object> -Credential <Object> [-DataSetName <String>] [-TableName <String>]
  [-BatchSize <Int32>] [-MultipleTables] [-ForceAskCredentials] [-ForceTableSchemaUpdate] [-Types <Hashtable>]
- [<CommonParameters>]
+ [-groupId <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -38,10 +38,10 @@ Get-Process | Out-PowerBI -clientId "7a7be4f7-c64d-41da-94db-7fb8200f029c"
 
 1..53 |% {
 @{
-    Id = $_
-    ; Name = "Record $_"
-    ; Date = \[datetime\]::Now
-    ; Value = (Get-Random -Minimum 10 -Maximum 1000)
+	Id = $_
+	; Name = "Record $_"
+	; Date = \[datetime\]::Now
+	; Value = (Get-Random -Minimum 10 -Maximum 1000)
 }
 } | Out-PowerBI -clientId "7a7be4f7-c64d-41da-94db-7fb8200f029c"  -verbose
 
@@ -193,6 +193,21 @@ Accept wildcard characters: False
 
 ```yaml
 Type: Hashtable
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -groupId
+Id of the workspace where the reports will get pulled
+
+```yaml
+Type: String
 Parameter Sets: (All)
 Aliases:
 

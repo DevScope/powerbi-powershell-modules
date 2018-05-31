@@ -14,7 +14,7 @@ Change parameter values in one or more datasets.
 
 ```
 Set-PBIDatasetParameters [[-authToken] <String>] [-dataset] <Object> [-parameters] <Object>
- [<CommonParameters>]
+ [[-groupId] <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -83,6 +83,21 @@ Aliases:
 
 Required: True
 Position: 3
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -groupId
+{{Fill groupId Description}}
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 4
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False

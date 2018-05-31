@@ -13,7 +13,8 @@ Get refresh history of one or more datasets
 ## SYNTAX
 
 ```
-Get-PBIDatasetRefreshHistory [[-authToken] <String>] [-dataset] <Object> [[-top] <Int32>] [<CommonParameters>]
+Get-PBIDatasetRefreshHistory [[-authToken] <String>] [-dataset] <Object> [[-top] <Int32>] [[-groupId] <String>]
+ [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -75,6 +76,21 @@ Aliases:
 Required: False
 Position: 3
 Default value: 0
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -groupId
+{{Fill groupId Description}}
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 4
+Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

@@ -24,13 +24,13 @@ Sets the module config variables like: API Url, App Id,...
 
 ### EXAMPLE 1
 ```
-Set-PBIModuleConfig -pbiAPIUrl "https://api.powerbi.com/beta/myorg"
+Set-PBIModuleConfig -pbiAPIUrl "https://api.powerbi.com/beta/myorg" -AzureADAppId "YOUR Azure AD GUID"
 ```
 
 ## PARAMETERS
 
 ### -PBIAPIUrl
-{{Fill PBIAPIUrl Description}}
+The url for the PBI API
 
 ```yaml
 Type: String
@@ -45,7 +45,7 @@ Accept wildcard characters: False
 ```
 
 ### -AzureADAppId
-{{Fill AzureADAppId Description}}
+Your Azure AD Application Id
 
 ```yaml
 Type: String
@@ -60,7 +60,8 @@ Accept wildcard characters: False
 ```
 
 ### -AzureADAuthorityUrl
-{{Fill AzureADAuthorityUrl Description}}
+Url to the Azure AD Authority URL
+Default: "https://login.microsoftonline.com/common/oauth2/authorize"
 
 ```yaml
 Type: String
@@ -90,7 +91,8 @@ Accept wildcard characters: False
 ```
 
 ### -AzureADRedirectUrl
-{{Fill AzureADRedirectUrl Description}}
+Url to the Redirect Url of the Azure AD App
+Default: "https://login.live.com/oauth20_desktop.srf"
 
 ```yaml
 Type: String

@@ -17,16 +17,14 @@ Get-PBIModuleConfig [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-{{Fill in the Description}}
+Gets the module config variables like: API Url, App Id,...
 
 ## EXAMPLES
 
-### Example 1
-```powershell
-PS C:\> {{ Add example code here }}
+### EXAMPLE 1
 ```
-
-{{ Add example description here }}
+Get-PBIModuleConfig
+```
 
 ## PARAMETERS
 

@@ -15,7 +15,7 @@ Note: This operation will delete all the table rows
 
 ```
 Update-PBITableSchema [[-authToken] <String>] [-dataSetId] <String> [-table] <Object> [[-types] <Hashtable>]
- [<CommonParameters>]
+ [[-groupId] <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -96,6 +96,21 @@ Aliases:
 
 Required: False
 Position: 4
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -groupId
+Id of the workspace where the reports will get pulled
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 5
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False

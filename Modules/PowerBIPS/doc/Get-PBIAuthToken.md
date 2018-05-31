@@ -14,7 +14,7 @@ Gets the authentication token required to comunicate with the PowerBI API's
 
 ### default (Default)
 ```
-Get-PBIAuthToken [-ForceAskCredentials] [<CommonParameters>]
+Get-PBIAuthToken [-ForceAskCredentials] [-clientId <String>] [-redirectUri <String>] [<CommonParameters>]
 ```
 
 ### credential
@@ -46,7 +46,7 @@ $Credential = Get-Credential
 ```
 
 Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -Credential $Credential
-         Returns the access token for the PowerBI REST API using the client ID and a PSCredential object.
+Returns the access token for the PowerBI REST API using the client ID and a PSCredential object.
 
 ## PARAMETERS
 
@@ -79,6 +79,36 @@ Aliases:
 Required: False
 Position: Named
 Default value: False
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -clientId
+The Client Id of the Azure AD application
+
+```yaml
+Type: String
+Parameter Sets: default
+Aliases:
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -redirectUri
+The redirect URI associated with the native client application
+
+```yaml
+Type: String
+Parameter Sets: default
+Aliases:
+
+Required: False
+Position: Named
+Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

@@ -13,11 +13,12 @@ Gets all the PowerBI existing dashboards and returns as an array of custom objec
 ## SYNTAX
 
 ```
-Get-PBIDashboard [[-authToken] <String>] [[-name] <String>] [[-id] <String>] [<CommonParameters>]
+Get-PBIDashboard [[-authToken] <String>] [[-name] <String>] [[-id] <String>] [[-groupId] <String>]
+ [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-{{Fill in the Description}}
+Gets all the PowerBI existing dashboards and returns as an array of custom objects.
 
 ## EXAMPLES
 
@@ -29,7 +30,8 @@ Get-PBIDashboard -authToken $authToken
 ## PARAMETERS
 
 ### -authToken
-{{Fill authToken Description}}
+The authorization token required to communicate with the PowerBI APIs
+Use 'Get-PBIAuthToken' to get the authorization token string
 
 ```yaml
 Type: String
@@ -44,7 +46,7 @@ Accept wildcard characters: False
 ```
 
 ### -name
-{{Fill name Description}}
+The name of the dashboard
 
 ```yaml
 Type: String
@@ -59,7 +61,7 @@ Accept wildcard characters: False
 ```
 
 ### -id
-{{Fill id Description}}
+The id of the dashboard
 
 ```yaml
 Type: String
@@ -68,6 +70,21 @@ Aliases:
 
 Required: False
 Position: 3
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -groupId
+Id of the workspace where the reports will get pulled
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 4
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False

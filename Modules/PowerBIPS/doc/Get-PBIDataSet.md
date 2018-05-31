@@ -113,7 +113,7 @@ Accept wildcard characters: False
 ```
 
 ### -groupId
-{{Fill groupId Description}}
+Id of the workspace where the reports will get pulled
 
 ```yaml
 Type: String

@@ -10,7 +10,7 @@ ModuleVersion = '1.0.0.0'
 GUID = '4380560b-ec14-4627-af81-635405ceb29f'
 
 # Author of this module
-Author = '"DevScope"'
+Author = 'DevScope'
 
 # Company or vendor of this module
 CompanyName = 'DevScope'
@@ -19,7 +19,11 @@ CompanyName = 'DevScope'
 Copyright = '(c) 2017 DevScope. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = ''
+Description = 'This module is a collection of very useful tools for Power BI.
+For example:
+    - Export PBI Desktop into CSV/SQL
+    - Convert from PBI Desktop into AS Tabular
+    - Get a dataset schema from a Power BI Desktop file (to create a REST DataSet)'
 
 # Minimum version of the Windows PowerShell engine required by this module
 # PowerShellVersion = ''
@@ -65,7 +69,7 @@ RequiredModules = @("SQLHelper")
 
 # Functions to export from this module
 FunctionsToExport = @(
-	"Get-PBIDesktopTCPPort", "Convert-PowerBIDesktopToASTabular", "Export-PBIDesktopToSQL", "Export-PBIDesktopToCSV"
+	"Get-PBIDesktopTCPPort", "Convert-PowerBIDesktopToASTabular", "Export-PBIDesktopToSQL", "Export-PBIDesktopToCSV","Get-PBIDataSetFromPBIDesktop"
 )
 
 # Cmdlets to export from this module

@@ -13,7 +13,7 @@ Check if a dataset exists by name
 ## SYNTAX
 
 ```
-Test-PBIDataSet [[-authToken] <String>] [-name] <Object> [<CommonParameters>]
+Test-PBIDataSet [[-authToken] <String>] [-name] <Object> [[-groupId] <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -56,6 +56,21 @@ Aliases:
 
 Required: True
 Position: 2
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -groupId
+Id of the workspace where the reports will get pulled
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 3
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False

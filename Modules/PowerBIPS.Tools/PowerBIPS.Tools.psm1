@@ -374,6 +374,136 @@ Export-PBIDesktopToCSV -pbiDesktopWindowName "*Van Arsdel*" -outputPath ".\CSVOu
 	}        			
 }
 
+Function Get-PBIDataSetFromPBIDesktop 
+{
+<#
+.SYNOPSIS
+A quick way to convert a Power BI Desktop file in a REST API enabled dataset
+.DESCRIPTION
+A quick way to convert a Power BI Desktop file in a REST API enabled dataset
+.PARAMETER datasetName
+Name to Dataset
+.PARAMETER pbiDesktopWindowName
+Power BI Desktop window name, wildcards can be used. Ex: "*name*"
+.EXAMPLE
+Get-PBIDataSetFromPBIDesktop -datasetName $datasetName -pbiDesktopWindowName "*RealTime*"
+#>
+[CmdletBinding()]
+param(		        
+    [Parameter(Mandatory = $true)]        
+    [string]
+    $pbiDesktopWindowName,
+    [Parameter(Mandatory = $true)]        
+    [string]$datasetName
+  ) 
+ 
+    #get port and database model
+    
+    $port = Get-PBIDesktopTCPPort $pbiDesktopWindowName
+
+    $dataSource = "localhost:$port"
+    
+    $server = New-Object Microsoft.AnalysisServices.Tabular.Server
+
+    $server.Connect($dataSource)
+
+    $database = $server.Databases[0]
+
+    $dataSetSchema = @{
+
+        name = $datasetName
+
+        ;tables = @()
+
+        ;relationships = @()
+    }
+    
+    #for each Relationships
+
+    $relationships = $database.Model.Relationships | ? {$_.ToTable.Name -NotMatch "LocalDateTable"}
+
+    $relationships |% {
+
+        $relationship = $_
+
+        $props = @{ 
+
+              name = $relationship.Name
+
+            ; fromTable = $relationship.FromTable.Name
+
+            ; fromColumn = $relationship.FromColumn.Name
+
+            ; toTable = $relationship.ToTable.Name
+
+            ; toColumn = $relationship.ToColumn.Name
+            
+            ; crossFilteringBehavior = $relationship.CrossFilteringBehavior.ToString()
+        }
+        
+        $dataSetSchema.relationships +=  $props
+    }
+
+    #for each tables
+
+    $tables = $database.Model.Tables | ? {!$_.Name.StartsWith("DateTableTemplate") -and !$_.Name.StartsWith("LocalDateTable")}
+
+    $tables |% {
+            
+        $table = $_
+        
+        $newTable = @{
+
+            name = $table.Name
+
+            ;columns = @()
+
+            ;measures = @()
+        }
+
+        #for each columns
+
+        $columns = $table.Columns | ? {!$_.Name.StartsWith("RowNumber")}
+
+        $columns |% {
+
+            $column = $_
+
+            $props = @{ 
+                name = $column.Name
+
+              ; dataType = $column.DataType.ToString()
+
+              ; isHidden = $column.isHidden
+            }
+
+            $newTable.columns +=  $props
+            
+        }
+
+        #for each measures
+
+        $table.Measures |% {
+
+            $measure = $_
+
+            $props = @{ 
+                name = $measure.Name
+
+              ; expression = $measure.Expression
+
+              ; formatString = $measure.FormatString
+            }
+
+            $newTable.measures +=  $props
+
+        }
+
+        $dataSetSchema.tables += $newTable
+    }
+
+   $dataSetSchema
+}
 Function Export-PBIDesktopToSQL
 {      
 <#

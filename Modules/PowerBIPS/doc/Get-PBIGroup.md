@@ -8,7 +8,7 @@ schema: 2.0.0
 # Get-PBIGroup
 
 ## SYNOPSIS
-Gets all the PowerBI existing groups and returns as an array of custom objects.
+Gets all the PowerBI existing workspaces
 
 ## SYNTAX
 
@@ -17,19 +17,20 @@ Get-PBIGroup [[-authToken] <String>] [[-name] <String>] [[-id] <String>] [<Commo
 ```
 
 ## DESCRIPTION
-{{Fill in the Description}}
+Gets all the PowerBI existing workspaces
 
 ## EXAMPLES
 
 ### EXAMPLE 1
 ```
-Get-PBIGroup -authToken $authToken
+Get-PBIWorkspace -authToken $authToken
 ```
 
 ## PARAMETERS
 
 ### -authToken
-{{Fill authToken Description}}
+The authorization token required to communicate with the PowerBI APIs
+Use 'Get-PBIAuthToken' to get the authorization token string
 
 ```yaml
 Type: String
@@ -44,7 +45,7 @@ Accept wildcard characters: False
 ```
 
 ### -name
-{{Fill name Description}}
+The name of the workspace
 
 ```yaml
 Type: String
@@ -59,7 +60,7 @@ Accept wildcard characters: False
 ```
 
 ### -id
-{{Fill id Description}}
+The id of the workspace
 
 ```yaml
 Type: String

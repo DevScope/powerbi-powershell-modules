@@ -15,13 +15,13 @@ Rebind reports to another dataset on the same workspace.
 ### default (Default)
 ```
 Set-PBIReportsDataset [-authToken <String>] -report <Object> -targetDatasetId <String> [-timeout <Int32>]
- [<CommonParameters>]
+ [-groupId <String>] [<CommonParameters>]
 ```
 
 ### sourceDS
 ```
 Set-PBIReportsDataset [-authToken <String>] -sourceDatasetId <Object> -targetDatasetId <String>
- [-timeout <Int32>] [<CommonParameters>]
+ [-timeout <Int32>] [-groupId <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -120,6 +120,21 @@ Aliases:
 Required: False
 Position: Named
 Default value: 300
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -groupId
+{{Fill groupId Description}}
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: Named
+Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

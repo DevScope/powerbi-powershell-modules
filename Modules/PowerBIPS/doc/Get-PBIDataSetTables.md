@@ -13,7 +13,7 @@ schema: 2.0.0
 ## SYNTAX
 
 ```
-Get-PBIDataSetTables [[-authToken] <String>] [-dataSetId] <String> [-groupId] <String> [<CommonParameters>]
+Get-PBIDataSetTables [[-authToken] <String>] [-dataSetId] <String> [[-groupId] <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -68,7 +68,7 @@ Type: String
 Parameter Sets: (All)
 Aliases:
 
-Required: True
+Required: False
 Position: 2
 Default value: None
 Accept pipeline input: False

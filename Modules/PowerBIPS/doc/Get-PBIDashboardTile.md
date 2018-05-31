@@ -8,29 +8,35 @@ schema: 2.0.0
 # Get-PBIDashboardTile
 
 ## SYNOPSIS
-Gets all the PowerBI existing dashboards and returns as an array of custom objects.
+Gets all the tiles for a specific dashboard.
 
 ## SYNTAX
 
 ```
-Get-PBIDashboardTile [[-authToken] <String>] [[-dashboardId] <String>] [[-tileId] <String>]
+Get-PBIDashboardTile [[-authToken] <String>] [-dashboard] <Object> [[-tileId] <String>] [[-groupId] <String>]
  [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-{{Fill in the Description}}
+Gets all the tiles for a specific dashboard.
 
 ## EXAMPLES
 
 ### EXAMPLE 1
 ```
-Get-PBIDashboardTile -authToken $authToken -dashboardId "XXXX-XXXX-XXXX"
+Get-PBIDashboardTile -dashboard "XXXX-XXXX-XXXX"
+```
+
+### EXAMPLE 2
+```
+Get-PBIDashboard -id "GUID" | Get-PBIDashboardTile
 ```
 
 ## PARAMETERS
 
 ### -authToken
-{{Fill authToken Description}}
+The authorization token required to communicate with the PowerBI APIs
+Use 'Get-PBIAuthToken' to get the authorization token string
 
 ```yaml
 Type: String
@@ -44,23 +50,23 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -dashboardId
-{{Fill dashboardId Description}}
+### -dashboard
+{{Fill dashboard Description}}
 
 ```yaml
-Type: String
+Type: Object
 Parameter Sets: (All)
 Aliases:
 
-Required: False
+Required: True
 Position: 2
 Default value: None
-Accept pipeline input: False
+Accept pipeline input: True (ByValue)
 Accept wildcard characters: False
 ```
 
 ### -tileId
-{{Fill tileId Description}}
+The id of the tile
 
 ```yaml
 Type: String
@@ -69,6 +75,21 @@ Aliases:
 
 Required: False
 Position: 3
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -groupId
+Id of the workspace where the reports will get pulled
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 4
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False

@@ -13,7 +13,8 @@ Refresh one or more datasets
 ## SYNTAX
 
 ```
-Request-PBIDatasetRefresh [[-authToken] <String>] [-dataset] <Object> [<CommonParameters>]
+Request-PBIDatasetRefresh [[-authToken] <String>] [-dataset] <Object> [[-groupId] <String>]
+ [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -61,6 +62,21 @@ Required: True
 Position: 2
 Default value: None
 Accept pipeline input: True (ByValue)
+Accept wildcard characters: False
+```
+
+### -groupId
+{{Fill groupId Description}}
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 3
+Default value: None
+Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
