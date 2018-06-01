@@ -31,10 +31,15 @@ function Get-SQLConnection
 <#
 .SYNOPSIS
     Gets a DBConnection object of the specified provider to a connectionstring
-		
- .EXAMPLE
-        Get-SQLConnection -providerName "System.Data.SqlClient" -connectionString "Integrated Security=SSPI;Persist Security Info=False;Initial Catalog=DomusSocialDW;Data Source=.\sql2014" -Open
-		Gets a DBConnection of type SqlConnection and open it
+.PARAMETER providerName
+	Set provider name e.g. "System.Data.SqlClient"
+.PARAMETER connectionString
+	Set connection string e.g. "Integrated Security=SSPI;Persist Security Info=False;Initial Catalog=DW;Data Source=.\sql2017"
+.PARAMETER open
+	Choice if connection returns open or not
+.EXAMPLE
+	Get-SQLConnection -providerName "System.Data.SqlClient" -connectionString "Integrated Security=SSPI;Persist Security Info=False;Initial Catalog=DomusSocialDW;Data Source=.\sql2014" -Open
+	Gets a DBConnection of type SqlConnection and open it
 #>
 	[CmdletBinding()]
 	param(				
@@ -68,10 +73,11 @@ function Invoke-SQLCommand{
 <#
 .SYNOPSIS
     Invokes a SQLCommand with the following execution types: "Query", "QueryAsTable", "QueryAsDataSet", "NonQuery", "Scalar", "Reader", "Schema"
-		
- .EXAMPLE
-        Invoke-SQLCommand -connectionString "<connStr>" -commandText "select * from [table]"
-		Executes the SQL select command and returns to the pipeline a hashtable representing the row columns
+.PARAMETER providerName
+	Set provider name e.g. "System.Data.SqlClient"		
+.EXAMPLE
+	Invoke-SQLCommand -connectionString "<connStr>" -commandText "select * from [table]"
+	Executes the SQL select command and returns to the pipeline a hashtable representing the row columns
 
 #>
 	[CmdletBinding(DefaultParameterSetName = "connStr")]
