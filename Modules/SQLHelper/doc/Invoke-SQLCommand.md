@@ -42,7 +42,7 @@ Executes the SQL select command and returns to the pipeline a hashtable represen
 
 ### -providerName
 Set provider name e.g.
-"System.Data.SqlClient"
+"System.Data.SqlClient", default is System.Data.SqlClient
 
 ```yaml
 Type: String
@@ -57,7 +57,8 @@ Accept wildcard characters: False
 ```
 
 ### -connectionString
-{{Fill connectionString Description}}
+Set connection string e.g.
+"Integrated Security=SSPI;Persist Security Info=False;Initial Catalog=DW;Data Source=.\sql2017"
 
 ```yaml
 Type: String
@@ -72,7 +73,7 @@ Accept wildcard characters: False
 ```
 
 ### -connection
-{{Fill connection Description}}
+Given an System.Data.Common.DbConnection
 
 ```yaml
 Type: DbConnection
@@ -87,7 +88,7 @@ Accept wildcard characters: False
 ```
 
 ### -transaction
-{{Fill transaction Description}}
+Given an System.Data.SqlClient.SqlTransaction
 
 ```yaml
 Type: SqlTransaction
@@ -102,7 +103,7 @@ Accept wildcard characters: False
 ```
 
 ### -executeType
-{{Fill executeType Description}}
+Given "Query", "QueryAsTable", "QueryAsDataSet", "NonQuery", "Scalar", "Reader", "Schema", default is "Query"
 
 ```yaml
 Type: String
@@ -117,7 +118,7 @@ Accept wildcard characters: False
 ```
 
 ### -commandText
-{{Fill commandText Description}}
+Given an commandText
 
 ```yaml
 Type: String
@@ -132,7 +133,7 @@ Accept wildcard characters: False
 ```
 
 ### -commandType
-{{Fill commandType Description}}
+Given an System.Data.CommandType
 
 ```yaml
 Type: CommandType
@@ -148,7 +149,7 @@ Accept wildcard characters: False
 ```
 
 ### -parameters
-{{Fill parameters Description}}
+Given an Hashtable with pair value to use in AddWithValue(type, value)
 
 ```yaml
 Type: Object
@@ -163,7 +164,8 @@ Accept wildcard characters: False
 ```
 
 ### -commandTimeout
-{{Fill commandTimeout Description}}
+Given an timeout.
+default is 300
 
 ```yaml
 Type: Int32

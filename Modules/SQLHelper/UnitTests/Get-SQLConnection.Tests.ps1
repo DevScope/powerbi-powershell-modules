@@ -1,7 +1,7 @@
 
 Import-Module "$PsScriptRoot\..\SQLHelper.psm1" -Force
 
-#"$PsScriptRoot\..\SQLHelper.ps1"
+
 
 
 Describe 'Get-SQLConnection' {

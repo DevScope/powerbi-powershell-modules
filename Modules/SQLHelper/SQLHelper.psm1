@@ -74,7 +74,23 @@ function Invoke-SQLCommand{
 .SYNOPSIS
     Invokes a SQLCommand with the following execution types: "Query", "QueryAsTable", "QueryAsDataSet", "NonQuery", "Scalar", "Reader", "Schema"
 .PARAMETER providerName
-	Set provider name e.g. "System.Data.SqlClient"		
+	Set provider name e.g. "System.Data.SqlClient", default is System.Data.SqlClient
+.PARAMETER connectionString
+	Set connection string e.g. "Integrated Security=SSPI;Persist Security Info=False;Initial Catalog=DW;Data Source=.\sql2017"
+.PARAMETER connection
+	Given an System.Data.Common.DbConnection
+.PARAMETER transaction
+	Given an System.Data.SqlClient.SqlTransaction 
+.PARAMETER executeType
+	Given "Query", "QueryAsTable", "QueryAsDataSet", "NonQuery", "Scalar", "Reader", "Schema", default is "Query"
+.PARAMETER commandText
+	Given an commandText
+.PARAMETER commandType
+	Given an System.Data.CommandType
+.PARAMETER parameters
+	Given an Hashtable with pair value to use in AddWithValue(type, value)
+.PARAMETER commandTimeout
+	Given an timeout. default is 300
 .EXAMPLE
 	Invoke-SQLCommand -connectionString "<connStr>" -commandText "select * from [table]"
 	Executes the SQL select command and returns to the pipeline a hashtable representing the row columns
