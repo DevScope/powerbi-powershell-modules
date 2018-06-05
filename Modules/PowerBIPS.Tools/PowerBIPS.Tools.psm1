@@ -242,6 +242,8 @@ The tables to be exported - if empty all the tables get exported
 Path to the output folder
 .EXAMPLE
 Export-PBIDesktopToCSV -pbiDesktopWindowName "*Van Arsdel*" -outputPath ".\CSVOutput"
+.EXAMPLE
+Export-PBIDesktopToCSV -tables @("product") -pbiDesktopWindowName "*Van Arsdel*" -outputPath ".\CSVOutput"
 #>
     [CmdletBinding()]
 	param(		        
