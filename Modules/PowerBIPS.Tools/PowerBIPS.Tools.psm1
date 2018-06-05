@@ -299,7 +299,7 @@ Export-PBIDesktopToCSV -pbiDesktopWindowName "*Van Arsdel*" -outputPath ".\CSVOu
 
             $csvWriter = New-Object CsvHelper.CsvWriter($textWriter)                   
   
-            $csvWriter.Configuration.CultureInfo.NumberFormat.NumberDecimalSeparator="."
+            $csvWriter.Configuration.CultureInfo.NumberFormat.NumberDecimalSeparator # read only
 
             $rows=0
 
