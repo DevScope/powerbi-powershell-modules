@@ -329,7 +329,7 @@ Function Get-PBIGroupUsers{
 .PARAMETER groupId
 	The id of the group
 .EXAMPLE
-	Get-PBIGroupUsers -authToken $authToken		
+	Get-PBIGroupUsers -authToken $authToken	-groupId "GUID"	
 
 #>
 	[CmdletBinding()][Alias("Get-PBIWorkspaceUsers")]		
@@ -357,7 +357,7 @@ Function New-PBIGroup{
 .PARAMETER Name
 	The name of the group
 .EXAMPLE
-		New-PBIGroup -authToken $authToken -name "Name Of The New Group"
+	New-PBIGroup -authToken $authToken -name "Name Of The New Group"
 #>
 	[CmdletBinding()][Alias("New-PBIWorkspace")]
 	param(

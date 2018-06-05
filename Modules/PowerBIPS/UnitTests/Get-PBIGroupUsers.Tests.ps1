@@ -6,8 +6,6 @@ Import-Module "$($ScriptDir)\PowerBIPS.psd1" -Force
 
 $id = "ec52ae73-0e32-4abc-b5d6-a84f4ea55a63"
 
-$name = "teste"
-
 Describe 'Get-PBIGroupUsers' {
 
     
