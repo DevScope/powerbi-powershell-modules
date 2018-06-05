@@ -523,6 +523,8 @@ The SQL Server connection string
 The target sql server schema where all the tables will be created (if not exists)
 .EXAMPLE
 Export-PBIDesktopToSQL -pbiDesktopWindowName "*Van Arsdel*" -sqlConnStr "Data Source=.\sql2017; Initial Catalog=Dummy; Integrated Security=true" -sqlSchema "stg" -Verbose
+.EXAMPLE
+Export-PBIDesktopToSQL -tables @("Product") -pbiDesktopWindowName "*Van Arsdel*" -sqlConnStr "Data Source=.\sql2017; Initial Catalog=Dummy; Integrated Security=true" -sqlSchema "stg" -Verbose
 #>
     [CmdletBinding()]
     param
