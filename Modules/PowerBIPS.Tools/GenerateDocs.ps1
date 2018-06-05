@@ -1,9 +1,12 @@
-cls
+Clear-Host
 
-
-$currentPath = (Split-Path $MyInvocation.MyCommand.Definition –Parent)
+$currentPath = (Split-Path $MyInvocation.MyCommand.Definition -Parent)
 
 Import-Module platyPS
+
+
+
+Import-Module "$($currentPath)\..\SQLHelper\SQLHelper.psd1" -Force
 
 Import-Module "$currentPath\PowerBIPS.Tools.psd1" -Force
 

@@ -27,6 +27,11 @@ A way to export all your Power BI Desktop model tables into a SQL Server Databas
 Export-PBIDesktopToSQL -pbiDesktopWindowName "*Van Arsdel*" -sqlConnStr "Data Source=.\sql2017; Initial Catalog=Dummy; Integrated Security=true" -sqlSchema "stg" -Verbose
 ```
 
+### EXAMPLE 2
+```
+Export-PBIDesktopToSQL -tables @("Product") -pbiDesktopWindowName "*Van Arsdel*" -sqlConnStr "Data Source=.\sql2017; Initial Catalog=Dummy; Integrated Security=true" -sqlSchema "stg" -Verbose
+```
+
 ## PARAMETERS
 
 ### -pbiDesktopWindowName

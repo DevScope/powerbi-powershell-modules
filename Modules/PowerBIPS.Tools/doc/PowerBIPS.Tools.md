@@ -20,6 +20,9 @@ Locale: en-US
 ### [Export-PBIDesktopToSQL](Export-PBIDesktopToSQL.md)
 {{Manually Enter Export-PBIDesktopToSQL Description Here}}
 
+### [Get-PBIDataSetFromPBIDesktop](Get-PBIDataSetFromPBIDesktop.md)
+{{Manually Enter Get-PBIDataSetFromPBIDesktop Description Here}}
+
 ### [Get-PBIDesktopTCPPort](Get-PBIDesktopTCPPort.md)
 {{Manually Enter Get-PBIDesktopTCPPort Description Here}}
 

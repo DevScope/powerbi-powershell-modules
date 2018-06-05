@@ -5,31 +5,25 @@ online version:
 schema: 2.0.0
 ---
 
-# Export-PBIDesktopToCSV
+# Get-PBIDataSetFromPBIDesktop
 
 ## SYNOPSIS
-A way to export all your Power BI Desktop model tables into CSV files
+A quick way to convert a Power BI Desktop file in a REST API enabled dataset
 
 ## SYNTAX
 
 ```
-Export-PBIDesktopToCSV [-pbiDesktopWindowName] <String> [[-tables] <String[]>] [-outputPath] <String>
- [<CommonParameters>]
+Get-PBIDataSetFromPBIDesktop [-pbiDesktopWindowName] <String> [-datasetName] <String> [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-A way to export all your Power BI Desktop model tables into CSV files
+A quick way to convert a Power BI Desktop file in a REST API enabled dataset
 
 ## EXAMPLES
 
 ### EXAMPLE 1
 ```
-Export-PBIDesktopToCSV -pbiDesktopWindowName "*Van Arsdel*" -outputPath ".\CSVOutput"
-```
-
-### EXAMPLE 2
-```
-Export-PBIDesktopToCSV -tables @("product") -pbiDesktopWindowName "*Van Arsdel*" -outputPath ".\CSVOutput"
+Get-PBIDataSetFromPBIDesktop -datasetName $datasetName -pbiDesktopWindowName "*RealTime*"
 ```
 
 ## PARAMETERS
@@ -50,23 +44,8 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -tables
-The tables to be exported - if empty all the tables get exported
-
-```yaml
-Type: String[]
-Parameter Sets: (All)
-Aliases:
-
-Required: False
-Position: 2
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -outputPath
-Path to the output folder
+### -datasetName
+Name to Dataset
 
 ```yaml
 Type: String
@@ -74,7 +53,7 @@ Parameter Sets: (All)
 Aliases:
 
 Required: True
-Position: 3
+Position: 2
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
