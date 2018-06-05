@@ -172,20 +172,20 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -Credential $C
 Returns the access token for the PowerBI REST API using the client ID and a PSCredential object.
 #>
     
-    [CmdletBinding(DefaultParameterSetName = 'default')]
+    [CmdletBinding()]
     [OutputType([string])]
     param
     (        
-        [Parameter(Mandatory = $true, ParameterSetName = 'credential')]
+        [Parameter(Mandatory=$false)]
         [System.Management.Automation.CredentialAttribute()]
         $Credential,
-        [Parameter(ParameterSetName = 'default')]
+        [Parameter(Mandatory=$false)]
         [switch]
 		$ForceAskCredentials = $false,
-		[Parameter(ParameterSetName = 'default')]
+		[Parameter(Mandatory=$false)]
         [string]
 		$clientId,
-		[Parameter(ParameterSetName = 'default')]
+		[Parameter(Mandatory=$false)]
         [string]
         $redirectUri
 	)
