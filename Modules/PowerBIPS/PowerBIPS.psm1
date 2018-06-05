@@ -290,15 +290,18 @@ Function Get-PBIGroup{
 	.DESCRIPTION 
 		Gets all the PowerBI existing workspaces
 	.PARAMETER AuthToken
-    The authorization token required to communicate with the PowerBI APIs
-	Use 'Get-PBIAuthToken' to get the authorization token string	
+    	The authorization token required to communicate with the PowerBI APIs
+		Use 'Get-PBIAuthToken' to get the authorization token string	
 	.PARAMETER Name
-	The name of the workspace	
+		The name of the workspace	
 	.PARAMETER id
-	The id of the workspace
-	.EXAMPLE
-				
+		The id of the workspace
+	.EXAMPLE	
 		Get-PBIWorkspace -authToken $authToken		
+	.EXAMPLE	
+		Get-PBIWorkspace -authToken $authToken -name "Group Name"
+	.EXAMPLE	
+		Get-PBIWorkspace -authToken $authToken -id "GUID"
 	
 	#>
 	[CmdletBinding()][Alias("Get-PBIWorkspace")]		
@@ -320,7 +323,11 @@ Function Get-PBIGroupUsers{
 .SYNOPSIS    
 	Gets users that are members of a specific workspace (group) and returns as an array of custom objects.
 	Must use Set-PBIGroup first to set the group.
-		
+.PARAMETER authToken
+	The authorization token required to communicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string	
+.PARAMETER groupId
+	The id of the group
 .EXAMPLE
 	Get-PBIGroupUsers -authToken $authToken		
 
