@@ -427,12 +427,12 @@ Function Get-PBIReport{
 	The name of the report
 .PARAMETER GroupId
 	Id of the workspace where the reports will get pulled
-.EXAMPLE	
-	Get-PBIReport
 .EXAMPLE
-	Get-PBIReport -id "GUID"
+	Get-PBIReport -authToken $authToken -id "GUID"
 .EXAMPLE
-	Get-PBIReport -id "GUID" -groupId "GUID"
+	Get-PBIReport -authToken $authToken -id "GUID" -groupId "GUID"
+.EXAMPLE
+	Get-PBIReport -authToken $authToken -name "Report Name" -groupId "GUID"
 #>
 		[CmdletBinding()]		
 		param(									
