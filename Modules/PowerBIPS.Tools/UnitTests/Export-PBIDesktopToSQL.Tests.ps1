@@ -23,5 +23,17 @@ Describe 'Export-PBIDesktopToSQL' {
 
     }
 
+    It 'Given parameter pbiDesktopWindowName and sqlConnStr and tables, it  tables get exported to SQL Server Database ' {
+
+        #arrange
+        $tables = @("Product")
+
+        $export = Export-PBIDesktopToSQL -tables $tables -pbiDesktopWindowName "*VanArsdel*"-sqlConnStr $connectionString
+         
+         #assert
+         $export | Should -Be $null
+ 
+     }
+
 }
 
