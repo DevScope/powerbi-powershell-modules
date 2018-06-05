@@ -390,7 +390,7 @@ Function New-PBIGroupUser{
 .PARAMETER GroupUserAccessRight
 	The access right the user gets on the group
 .EXAMPLE
-		New-PBIGroupUser -authToken $authToken -groupId $groupId -emailAddress "someone@your-organisation.com"
+	New-PBIGroupUser -authToken $authToken -groupId $groupId -emailAddress "someone@your-organisation.com"
 #>
 	[CmdletBinding()][Alias("New-PBIWorkspaceUser")]
 	param(
