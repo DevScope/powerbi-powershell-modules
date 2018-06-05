@@ -1,5 +1,9 @@
 
-Import-Module "$PsScriptRoot\..\SQLHelper.psm1" -Force
+Clear-Host
+$ScriptDir = (Split-Path -parent $MyInvocation.MyCommand.Path) | Split-Path -parent
+
+
+Import-Module "$($ScriptDir)\SQLHelper.psd1" -Force
 
 
 $tableToTest = "[dbo].[foo]"
