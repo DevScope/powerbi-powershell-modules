@@ -18,7 +18,8 @@ Describe 'Get-PBIReport' {
 
     
     It 'Given parameter Id, it get report ' {
-      
+        
+        #act
         $report = Get-PBIReport -authToken $authToken -id $reportId -groupId $groupId
 
         #assert
@@ -28,7 +29,7 @@ Describe 'Get-PBIReport' {
 
     It 'Given parameter name, it get report ' {
       
-       
+        #act
         $report = Get-PBIReport -authToken $authToken -name $reportName -groupId $groupId
 
         #assert
