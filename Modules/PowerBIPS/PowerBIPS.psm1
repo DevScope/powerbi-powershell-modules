@@ -1871,7 +1871,7 @@ Function Update-PBIDatasetDatasources {
 
 		# documentation at https://msdn.microsoft.com/en-us/library/mt814715.aspx
 
-		Invoke-PBIRequest -authToken $authToken -method Post -resource "datasets/$($dataset.id)/updatedatasources" -Body $body -groupId
+		Invoke-PBIRequest -authToken $authToken -method Post -resource "datasets/$($dataset.id)/updatedatasources" -Body $body -groupId $groupid
 
 	} 
 }
