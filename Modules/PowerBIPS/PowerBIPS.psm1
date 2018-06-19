@@ -178,16 +178,22 @@ Returns the access token for the PowerBI REST API using the client ID and a PSCr
     (        
         [Parameter(Mandatory=$false)]
         [System.Management.Automation.CredentialAttribute()]
-        $Credential,
+        $credential,
         [Parameter(Mandatory=$false)]
         [switch]
-		$ForceAskCredentials = $false,
+		$forceAskCredentials = $false,
 		[Parameter(Mandatory=$false)]
         [string]
 		$clientId,
 		[Parameter(Mandatory=$false)]
         [string]
-        $redirectUri
+        $redirectUri,        
+		[Parameter(Mandatory=$false)]
+        [string]
+        $clientSecret,
+        [Parameter(Mandatory=$false)]
+        [switch]
+		$returnADALObj = $false
 	)
 
     if ($Script:AuthContext -eq $null)
@@ -208,22 +214,30 @@ Returns the access token for the PowerBI REST API using the client ID and a PSCr
 	
 	Write-Verbose -Message 'Getting the Authentication Token'
 	
-    if ($PSCmdlet.ParameterSetName -eq 'credential')
+    if ($credential -ne $null)
     {
         Write-Verbose -Message 'Using username+password authentication flow'
 		
-		$UserCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.UserPasswordCredential($Credential.UserName, $Credential.Password)
+		$UserCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.UserPasswordCredential($credential.UserName, $credential.Password)
 		
         $AuthResult = [Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContextIntegratedAuthExtensions]::AcquireTokenAsync($script:AuthContext
         , $script:pbiResourceUrl
 		, $clientId
 		, $UserCredential).Result
     }
+    elseif (![string]::IsNullOrEmpty($clientSecret))
+    {
+        $clientCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.ClientCredential($clientId, $clientSecret);
+
+        $AuthResult = $script:AuthContext.AcquireTokenAsync(
+          $script:pbiResourceUrl
+        , $clientCredential).Result
+    }
     else
     {
 		Write-Verbose -Message 'Using default authentication flow'
 		
-        if ($ForceAskCredentials)
+        if ($forceAskCredentials)
         {
             $promptBehavior = [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Always
         }
@@ -234,15 +248,79 @@ Returns the access token for the PowerBI REST API using the client ID and a PSCr
 		
 		$pltParams = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.PlatformParameters($promptBehavior)
 		
-		$AuthResult = $script:authContext.AcquireTokenAsync($script:pbiResourceUrl
-			, $clientId, [Uri]$redirectUri
-			, $pltParams
-		).Result        
+		$AuthResult = $script:authContext.AcquireTokenAsync($script:pbiResourceUrl, $clientId, [Uri]$redirectUri, $pltParams).Result        
     }
 
 	Write-Verbose -Message "Authenticated as $($AuthResult.UserInfo.DisplayableId)"
 	
-    $AuthResult.AccessToken
+    if ($returnADALObj)
+    {
+        Write-Output $AuthResult
+    }
+    else
+    {
+        Write-Output $AuthResult.AccessToken
+    }    
+}
+
+Function Get-PBIAuthTokenHttp
+{
+<#
+.SYNOPSIS
+Gets the authentication token required to comunicate with the PowerBI API's
+
+.DESCRIPTION
+Gets the authentication token required to comunicate with the PowerBI API's
+
+#>
+    
+    [CmdletBinding()]
+    [OutputType([string])]
+    param
+    (                
+        [Parameter(Mandatory=$true)]
+        [string]
+		$tenantId,
+		[Parameter(Mandatory=$true)]
+        [string]
+		$clientId,
+		[Parameter(Mandatory=$false)]
+        [string]
+        $clientSecret
+	)
+           
+	if ([string]::IsNullOrEmpty($clientId))
+	{
+		$clientId = $script:pbiDefaultClientId
+	}
+	
+	if ([string]::IsNullOrEmpty($redirectUri))
+	{
+		$redirectUri = $script:pbiDefaultAuthRedirectUri
+	}
+	
+    $resource = $script:pbiResourceUrl
+
+    $grantType = "client_credentials"
+    
+
+	Write-Verbose -Message 'Getting the Authentication Token'
+
+    $tokenUri = "https://login.windows.net/$tenantId/oauth2/token?api-version=1.0"
+
+    $body = "grant_type=$grantType&client_id=$clientId&resource=$resource"
+    
+    if (![string]::IsNullOrEmpty($clientSecret))
+    {
+        $clientSecret = [System.Web.HttpUtility]::UrlEncode($clientSecret)
+        $body += "&client_secret=$clientSecret"
+    }    
+
+    Write-Host "Getting Token: $body"
+
+    $token = Invoke-RestMethod -Method Post -Uri $tokenUri -Body $body
+	
+    Write-Output $token
 }
 
 Function Set-PBIGroup{
@@ -270,7 +348,7 @@ Function Set-PBIGroup{
 		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$false)] [string] $id,
 		[Parameter(Mandatory=$false)] [string] $name,
-		[Parameter(Mandatory=$false)] [switch] $clear = $false			
+		[Parameter(Mandatory=$false)] [switch] $clear = $false        	
 	)
 		
 	if ($clear)
@@ -305,12 +383,21 @@ Function Get-PBIGroup{
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$false)] [string] $name,
-		[Parameter(Mandatory=$false)] [string] $id		
+		[Parameter(Mandatory=$false)] [string] $id,
+        [Parameter(Mandatory=$false)] [switch] $admin = $false,
+        [Parameter(Mandatory=$false)] [switch] $withUsers = $false		
 	)
 
 	Write-Verbose "Getting Groups"
+
+    $resource = "groups"
+
+    if ($withUsers)
+    {
+        $resource = "$resource`?`$expand=users"
+    }
 	
-	$groups = @(Invoke-PBIRequest -authToken $authToken -method Get -resource "groups" -ignoreGroup)		
+	$groups = @(Invoke-PBIRequest -authToken $authToken -method Get -resource $resource -ignoreGroup -admin:$admin)		
 	
 	Write-Output (Find-ByIdOrName -items $groups -id $id -name $name)
 }
@@ -432,7 +519,8 @@ Function Get-PBIReport{
 			[Parameter(Mandatory=$false)] [string] $authToken,
 			[Parameter(Mandatory=$false)] [string] $name,
 			[Parameter(Mandatory=$false)] [string] $id,
-			[Parameter(Mandatory=$false)] [string] $groupId		
+			[Parameter(Mandatory=$false)] [string] $groupId,
+            [Parameter(Mandatory=$false)] [switch] $admin = $false
 		)
 					
 		Write-Verbose "Getting Reports"
@@ -444,7 +532,7 @@ Function Get-PBIReport{
 			$resource += "/$id"
 		}
 
-		$reports = @(Invoke-PBIRequest -authToken $authToken -method Get -resource $resource -groupId $groupId)
+		$reports = @(Invoke-PBIRequest -authToken $authToken -method Get -resource $resource -groupId $groupId -admin:$admin)
 						
 		Write-Verbose "Found $($reports.count) reports."
 
@@ -673,14 +761,15 @@ Function Get-PBIDataSet{
 		[Parameter(Mandatory=$false)] [string] $id,
 		[Parameter(Mandatory=$false)] [switch] $includeDefinition,
 		[Parameter(Mandatory=$false)] [switch] $includeTables,
-		[Parameter(Mandatory=$false)] [string] $groupId
+		[Parameter(Mandatory=$false)] [string] $groupId,
+        [Parameter(Mandatory=$false)] [switch] $admin = $false
 	)
 	
 	if ([string]::IsNullOrEmpty($id))
 	{
 		Write-Verbose "Getting DataSets"				
 		
-        $dataSets = @(Invoke-PBIRequest -authToken $authToken -method Get -resource "datasets" -groupId $groupId)				
+        $dataSets = @(Invoke-PBIRequest -authToken $authToken -method Get -resource "datasets" -groupId $groupId -admin:$admin)				
 		
 		Write-Verbose "Found $($dataSets.count) datasets."	
 		
@@ -1919,7 +2008,8 @@ Function Invoke-PBIRequest{
         [Parameter(Mandatory=$false)] [int] $timeoutSec = 240,
         [Parameter(Mandatory=$false)] [string] $outFile,
 		[Parameter(Mandatory=$false)] [string] $groupId,
-		[switch]$ignoreGroup = $false
+		[Parameter(Mandatory=$false)] [switch] $ignoreGroup = $false,
+        [Parameter(Mandatory=$false)] [switch] $admin = $false	
 	)
 	  	
     if ([string]::IsNullOrEmpty($authToken))
@@ -1932,7 +2022,7 @@ Function Invoke-PBIRequest{
 		'Authorization'= "Bearer $authToken"
 		}    
 
-	if (!$ignoreGroup)
+	if (!$ignoreGroup)# -and !$admin)
 	{
 		if (![string]::IsNullOrEmpty($groupId))
 		{
@@ -1943,12 +2033,19 @@ Function Invoke-PBIRequest{
 			$resource = "groups/$script:pbiGroupId/$resource"
 		}
 	}
+    
+    $url = $script:pbiAPIUrl    
 
-	$resource = "$script:pbiAPIUrl/$resource"
-
+    if ($admin)
+    {
+        $url += "/admin"
+    }
+        
+    $url += "/$resource"
+    	
     try
     {
-        $result = Invoke-RestMethod -Uri $resource -Headers $headers -Method $method -Body $body -ContentType $contentType `
+        $result = Invoke-RestMethod -Uri $url -Headers $headers -Method $method -Body $body -ContentType $contentType `
             -TimeoutSec $timeoutSec -OutFile $outFile        
 		
 		if ($result -ne $null -and $result.PSObject.Properties['value'])
