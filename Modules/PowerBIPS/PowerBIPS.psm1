@@ -187,7 +187,10 @@ Returns the access token for the PowerBI REST API using the client ID and a PSCr
 		$clientId,
 		[Parameter(Mandatory=$false)]
         [string]
-        $redirectUri,        
+        $redirectUri,   
+        [Parameter(Mandatory=$false)]
+        [string]
+        $tenantId,     
 		[Parameter(Mandatory=$false)]
         [string]
         $clientSecret,
@@ -199,7 +202,15 @@ Returns the access token for the PowerBI REST API using the client ID and a PSCr
     if ($Script:AuthContext -eq $null)
     {
         Write-Verbose -Message 'Creating new AuthenticationContext object'
-        $script:AuthContext = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext -ArgumentList ($script:pbiAuthorityUrl)
+
+        $authorityUrl = $script:pbiAuthorityUrl
+
+        if (![string]::IsNullOrEmpty($tenantId))
+        {
+            $authorityUrl = $authorityUrl.Replace("/common/","/$tenantId/")
+        }
+
+        $script:AuthContext = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext -ArgumentList ($authorityUrl)
     }
 
 	if ([string]::IsNullOrEmpty($clientId))

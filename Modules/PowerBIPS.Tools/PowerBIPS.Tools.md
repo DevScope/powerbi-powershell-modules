@@ -1,9 +1,7 @@
 ---
 Module Name: PowerBIPS.Tools
 Module Guid: 4380560b-ec14-4627-af81-635405ceb29f
-Download Help Link: {{Please enter FwLink manually}}
-Help Version: {{Please enter version of help manually (X.X.X.X) format}}
-Locale: en-US
+Version: 1.0.0.1
 ---
 
 # PowerBIPS.Tools Module
@@ -14,13 +12,18 @@ For example:
     - Convert from PBI Desktop into AS Tabular
     - Get a dataset schema from a Power BI Desktop file (to create a REST DataSet)
 
-Module also available on PowerShell Gallery:
+## Available on PowerShell Gallery: 
 
 https://www.powershellgallery.com/packages/PowerBIPS.Tools
 
-To install just type:
 
+### Install from PowerShell Gallery
+
+```powershell
 Install-Module -Name PowerBIPS.Tools
+# Or without admin priviledge:
+Install-Module -Name PowerBIPS.Tools -Scope CurrentUser
+```
 
 ## Sample Script - Convert PBIX to AS Tabular
 
@@ -40,7 +43,7 @@ Export-PBIDesktopToSQL -pbiDesktopWindowName "*PowerBIETLSample*" -sqlConnStr "D
 
 ```
 
-## Sample Script - Create a REST API DataSet with Power BI Desktop
+## Sample Script - Create a REST API DataSet using Power BI Desktop
 
 ```powershell
 

@@ -1,9 +1,7 @@
 ---
 Module Name: PowerBIPS
 Module Guid: 163a1640-a4f2-4b1f-a3af-2796ad56200b
-Download Help Link: {{Please enter FwLink manually}}
-Help Version: {{Please enter version of help manually (X.X.X.X) format}}
-Locale: en-US
+Version: 2.0.1.3
 ---
 
 # PowerBIPS Module
@@ -15,13 +13,17 @@ More samples of usage here:
 * https://ruiromanoblog.wordpress.com/2015/03/03/create-a-real-time-it-dashboard-with-powerbips/
 * https://github.com/DevScope/powerbi-powershell-modules/blob/master/Modules/PowerBIPS/Samples
 
-Module also available on PowerShell Gallery:
+## Available on PowerShell Gallery: 
 
 https://www.powershellgallery.com/packages/PowerBIPS
 
-To install just type:
+### Install from PowerShell Gallery
 
+```powershell
 Install-Module -Name PowerBIPS
+# Or without admin priviledge:
+Install-Module -Name PowerBIPS -Scope CurrentUser
+```
 
 ## Sample Script - The most easy way to send data to Power BI
 
@@ -38,6 +40,14 @@ Get-Process | Out-PowerBI -verbose
 Set-PBIWorkspace -id "GUID"
 
 Get-PBIReport | Export-PBIReport -destinationFolder ".\Output" 
+
+```
+
+## Sample Script - Rebind All Reports to a different DataSet
+
+```powershell
+
+Get-PBIReport -groupId "WorkspaceId" | Set-PBIReportsDataset -targetDatasetId "DataSetId"
 
 ```
 
