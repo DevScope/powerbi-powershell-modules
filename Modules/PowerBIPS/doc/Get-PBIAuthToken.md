@@ -39,7 +39,7 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -Credential (G
 
 ### EXAMPLE 3
 ```
-"
+Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "company.onmicrosoft.com" -clientSecret "Azure AD APP Secret"
 ```
 
 ## PARAMETERS
