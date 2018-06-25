@@ -33,13 +33,15 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
 
 ```
 
-## Sample Script - Export PBI Desktop to SQL Server
+## Sample Script - Export PBI Desktop to SQL Server or CSV
 
 ```powershell
 
-Set-PBIWorkspace -id "GUID"
+# Export to SQL Server
+Export-PBIDesktopToSQL -pbiDesktopWindowName "*PowerBIETLSample*" -sqlConnStr "Data Source=.\sql2017; Initial Catalog=Dummy; Integrated Security=true" -sqlSchema "stg"
 
-Export-PBIDesktopToSQL -pbiDesktopWindowName "*PowerBIETLSample*" -sqlConnStr "Data Source=.\sql2017; Initial Catalog=Dummy; Integrated Security=true" -sqlSchema "stg" -Verbose
+# Export to CSV Files
+Export-PBIDesktopToCSV -pbiDesktopWindowName "*PowerBIETLSample*" -outputPath ".\outputFolder"
 
 ```
 
