@@ -29,27 +29,18 @@ It will automatically download and install the required nuget: "Microsoft.Identi
 
 ### EXAMPLE 1
 ```
-# Returns the access token for the PowerBI REST API using the client ID. You'll be presented with a pop-up window for
-```
-
-user authentication.
 Get-PBIAuthToken -clientId "C0E8435C-614D-49BF-A758-3EF858F8901B"
+```
 
 ### EXAMPLE 2
 ```
-# Returns the access token for the PowerBI REST API using the client ID and a PSCredential object.
+Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -Credential (Get-Credential)
 ```
-
-$Credential = Get-Credential
-Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -Credential $Credential
 
 ### EXAMPLE 3
 ```
-# Using an Azure AD WebApp
+"
 ```
-
-$Credential = Get-Credential
-Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "company.onmicrosoft.com" -clientSecret "\<Azure AD APP Secret\>"
 
 ## PARAMETERS
 

@@ -169,16 +169,10 @@ The Azure AD Tenant Id, optional and only needed if you are using the App Authen
 The Azure AD client secret, optional and only needed it the ClientId is a Azure AD WebApp type
 
 .EXAMPLE
-# Returns the access token for the PowerBI REST API using the client ID. You'll be presented with a pop-up window for 
-user authentication.
 Get-PBIAuthToken -clientId "C0E8435C-614D-49BF-A758-3EF858F8901B"
 .EXAMPLE
-# Returns the access token for the PowerBI REST API using the client ID and a PSCredential object.
-$Credential = Get-Credential
-Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -Credential $Credential
+Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -Credential (Get-Credential)
 .EXAMPLE
-# Using an Azure AD WebApp
-$Credential = Get-Credential
 Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "company.onmicrosoft.com" -clientSecret "<Azure AD APP Secret>"
 
 #>
