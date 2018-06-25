@@ -13,7 +13,7 @@ Gets an array of Power BI Report metadata from a workspace
 ## SYNTAX
 
 ```
-Get-PBIReport [[-authToken] <String>] [[-name] <String>] [[-id] <String>] [[-groupId] <String>]
+Get-PBIReport [[-authToken] <String>] [[-name] <String>] [[-id] <String>] [[-groupId] <String>] [-admin]
  [<CommonParameters>]
 ```
 
@@ -96,6 +96,21 @@ Aliases:
 Required: False
 Position: 4
 Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -admin
+{{Fill admin Description}}
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: Named
+Default value: False
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

@@ -26,6 +26,9 @@ Locale: en-US
 ### [Get-PBIAuthToken](Get-PBIAuthToken.md)
 {{Manually Enter Get-PBIAuthToken Description Here}}
 
+### [Get-PBIAuthTokenHttp](Get-PBIAuthTokenHttp.md)
+{{Manually Enter Get-PBIAuthTokenHttp Description Here}}
+
 ### [Get-PBIDashboard](Get-PBIDashboard.md)
 {{Manually Enter Get-PBIDashboard Description Here}}
 

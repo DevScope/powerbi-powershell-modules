@@ -12,14 +12,10 @@ Gets the authentication token required to comunicate with the PowerBI API's
 
 ## SYNTAX
 
-### default (Default)
 ```
-Get-PBIAuthToken [-ForceAskCredentials] [-clientId <String>] [-redirectUri <String>] [<CommonParameters>]
-```
-
-### credential
-```
-Get-PBIAuthToken -Credential <Object> [<CommonParameters>]
+Get-PBIAuthToken [[-credential] <Object>] [-forceAskCredentials] [[-clientId] <String>]
+ [[-redirectUri] <String>] [[-tenantId] <String>] [[-clientSecret] <String>] [-returnADALObj]
+ [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -33,24 +29,31 @@ It will automatically download and install the required nuget: "Microsoft.Identi
 
 ### EXAMPLE 1
 ```
-Get-PBIAuthToken -clientId "C0E8435C-614D-49BF-A758-3EF858F8901B"
+# Returns the access token for the PowerBI REST API using the client ID. You'll be presented with a pop-up window for
 ```
 
-Returns the access token for the PowerBI REST API using the client ID.
-You'll be presented with a pop-up window for 
 user authentication.
+Get-PBIAuthToken -clientId "C0E8435C-614D-49BF-A758-3EF858F8901B"
 
 ### EXAMPLE 2
 ```
-$Credential = Get-Credential
+# Returns the access token for the PowerBI REST API using the client ID and a PSCredential object.
 ```
 
+$Credential = Get-Credential
 Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -Credential $Credential
-Returns the access token for the PowerBI REST API using the client ID and a PSCredential object.
+
+### EXAMPLE 3
+```
+# Using an Azure AD WebApp
+```
+
+$Credential = Get-Credential
+Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "company.onmicrosoft.com" -clientSecret "\<Azure AD APP Secret\>"
 
 ## PARAMETERS
 
-### -Credential
+### -credential
 Specifies a PSCredential object or a string username used to authenticate to PowerBI.
 If only a username is specified 
 this will prompt for the password.
@@ -58,22 +61,22 @@ Note that this will not work with federated users.
 
 ```yaml
 Type: Object
-Parameter Sets: credential
+Parameter Sets: (All)
 Aliases:
 
-Required: True
-Position: Named
+Required: False
+Position: 1
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -ForceAskCredentials
+### -forceAskCredentials
 Forces the authentication popup to always ask for the username and password
 
 ```yaml
 Type: SwitchParameter
-Parameter Sets: default
+Parameter Sets: (All)
 Aliases:
 
 Required: False
@@ -88,11 +91,11 @@ The Client Id of the Azure AD application
 
 ```yaml
 Type: String
-Parameter Sets: default
+Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: Named
+Position: 2
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -103,12 +106,57 @@ The redirect URI associated with the native client application
 
 ```yaml
 Type: String
-Parameter Sets: default
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 3
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -tenantId
+The Azure AD Tenant Id, optional and only needed if you are using the App Authentication Flow
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 4
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -clientSecret
+The Azure AD client secret, optional and only needed it the ClientId is a Azure AD WebApp type
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 5
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -returnADALObj
+{{Fill returnADALObj Description}}
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
 Aliases:
 
 Required: False
 Position: Named
-Default value: None
+Default value: False
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

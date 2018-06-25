@@ -16,7 +16,7 @@ Check if a dataset exists with the specified name and if exists returns it's met
 
 ```
 Get-PBIDataSet [[-authToken] <String>] [[-name] <String>] [[-id] <String>] [-includeDefinition]
- [-includeTables] [[-groupId] <String>] [<CommonParameters>]
+ [-includeTables] [[-groupId] <String>] [-admin] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -123,6 +123,21 @@ Aliases:
 Required: False
 Position: 4
 Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -admin
+{{Fill admin Description}}
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: Named
+Default value: False
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

@@ -15,7 +15,7 @@ Invoke a raw PBI Post/Get
 ```
 Invoke-PBIRequest [[-authToken] <String>] [-resource] <String> [[-method] <String>] [[-body] <Object>]
  [[-scope] <String>] [[-contentType] <String>] [[-timeoutSec] <Int32>] [[-outFile] <String>]
- [[-groupId] <String>] [-ignoreGroup] [<CommonParameters>]
+ [[-groupId] <String>] [-ignoreGroup] [-admin] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -169,6 +169,21 @@ Accept wildcard characters: False
 
 ### -ignoreGroup
 {{Fill ignoreGroup Description}}
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: Named
+Default value: False
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -admin
+{{Fill admin Description}}
 
 ```yaml
 Type: SwitchParameter

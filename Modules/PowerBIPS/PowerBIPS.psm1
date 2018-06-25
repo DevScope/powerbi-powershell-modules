@@ -162,14 +162,25 @@ The redirect URI associated with the native client application
 .PARAMETER ForceAskCredentials
 Forces the authentication popup to always ask for the username and password
 
+.PARAMETER tenantId
+The Azure AD Tenant Id, optional and only needed if you are using the App Authentication Flow
+
+.PARAMETER clientSecret
+The Azure AD client secret, optional and only needed it the ClientId is a Azure AD WebApp type
+
 .EXAMPLE
-Get-PBIAuthToken -clientId "C0E8435C-614D-49BF-A758-3EF858F8901B"
-Returns the access token for the PowerBI REST API using the client ID. You'll be presented with a pop-up window for 
+# Returns the access token for the PowerBI REST API using the client ID. You'll be presented with a pop-up window for 
 user authentication.
+Get-PBIAuthToken -clientId "C0E8435C-614D-49BF-A758-3EF858F8901B"
 .EXAMPLE
+# Returns the access token for the PowerBI REST API using the client ID and a PSCredential object.
 $Credential = Get-Credential
 Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -Credential $Credential
-Returns the access token for the PowerBI REST API using the client ID and a PSCredential object.
+.EXAMPLE
+# Using an Azure AD WebApp
+$Credential = Get-Credential
+Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "company.onmicrosoft.com" -clientSecret "<Azure AD APP Secret>"
+
 #>
     
     [CmdletBinding()]
@@ -262,16 +273,23 @@ Returns the access token for the PowerBI REST API using the client ID and a PSCr
 		$AuthResult = $script:authContext.AcquireTokenAsync($script:pbiResourceUrl, $clientId, [Uri]$redirectUri, $pltParams).Result        
     }
 
-	Write-Verbose -Message "Authenticated as $($AuthResult.UserInfo.DisplayableId)"
-	
-    if ($returnADALObj)
+    if ($AuthResult -eq $null)
     {
-        Write-Output $AuthResult
+        throw "Cannot get the access token, AcquireTokenAsync returned null"
     }
     else
     {
-        Write-Output $AuthResult.AccessToken
-    }    
+	    Write-Verbose -Message "Authenticated as $($AuthResult.UserInfo.DisplayableId)"
+	
+        if ($returnADALObj)
+        {
+            Write-Output $AuthResult
+        }
+        else
+        {
+            Write-Output $AuthResult.AccessToken
+        }   
+    } 
 }
 
 Function Get-PBIAuthTokenHttp

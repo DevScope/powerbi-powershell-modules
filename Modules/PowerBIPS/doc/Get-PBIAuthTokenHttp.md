@@ -5,63 +5,63 @@ online version:
 schema: 2.0.0
 ---
 
-# Get-PBIGroup
+# Get-PBIAuthTokenHttp
 
 ## SYNOPSIS
-Gets all the PowerBI existing workspaces
+Gets the authentication token required to comunicate with the PowerBI API's
 
 ## SYNTAX
 
 ```
-Get-PBIGroup [[-authToken] <String>] [[-name] <String>] [[-id] <String>] [-admin] [-withUsers]
- [<CommonParameters>]
+Get-PBIAuthTokenHttp [-tenantId] <String> [-clientId] <String> [[-clientSecret] <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Gets all the PowerBI existing workspaces
+Gets the authentication token required to comunicate with the PowerBI API's
 
 ## EXAMPLES
 
-### EXAMPLE 1
+### Example 1
+```powershell
+PS C:\> {{ Add example code here }}
 ```
-Get-PBIWorkspace -authToken $authToken
-```
+
+{{ Add example description here }}
 
 ## PARAMETERS
 
-### -authToken
-The authorization token required to communicate with the PowerBI APIs
-Use 'Get-PBIAuthToken' to get the authorization token string
+### -tenantId
+{{Fill tenantId Description}}
 
 ```yaml
 Type: String
 Parameter Sets: (All)
 Aliases:
 
-Required: False
+Required: True
 Position: 1
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -name
-The name of the workspace
+### -clientId
+{{Fill clientId Description}}
 
 ```yaml
 Type: String
 Parameter Sets: (All)
 Aliases:
 
-Required: False
+Required: True
 Position: 2
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -id
-The id of the workspace
+### -clientSecret
+{{Fill clientSecret Description}}
 
 ```yaml
 Type: String
@@ -75,36 +75,6 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -admin
-{{Fill admin Description}}
-
-```yaml
-Type: SwitchParameter
-Parameter Sets: (All)
-Aliases:
-
-Required: False
-Position: Named
-Default value: False
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -withUsers
-{{Fill withUsers Description}}
-
-```yaml
-Type: SwitchParameter
-Parameter Sets: (All)
-Aliases:
-
-Required: False
-Position: Named
-Default value: False
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
 ### CommonParameters
 This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable.
 For more information, see about_CommonParameters (http://go.microsoft.com/fwlink/?LinkID=113216).
@@ -112,6 +82,8 @@ For more information, see about_CommonParameters (http://go.microsoft.com/fwlink
 ## INPUTS
 
 ## OUTPUTS
+
+### System.String
 
 ## NOTES
 
