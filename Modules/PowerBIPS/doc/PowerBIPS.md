@@ -86,6 +86,9 @@ Locale: en-US
 ### [Out-PowerBI](Out-PowerBI.md)
 {{Manually Enter Out-PowerBI Description Here}}
 
+### [Remove-PBIDataSet](Remove-PBIDataSet.md)
+{{Manually Enter Remove-PBIDataSet Description Here}}
+
 ### [Request-PBIDatasetRefresh](Request-PBIDatasetRefresh.md)
 {{Manually Enter Request-PBIDatasetRefresh Description Here}}
 

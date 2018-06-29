@@ -606,13 +606,13 @@ Function Set-PBIReportContent{
 			sourceType="ExistingReport"
 			sourceReport=@{
 				sourceReportId = $report.id
-				sourceWorkspaceId = $groupId
+				sourceWorkspaceId = $report.groupId
 			}
 		}
 
 		$targetReport = Get-PBIReport -groupId $targetGroupId -id $targetReportId
 
-		Invoke-PBIRequest -authToken $authToken -method Post -groupId $groupId -resource "reports/$($targetReport.id)/UpdateReportContent" -Body ($bodyObj | ConvertTo-Json)		
+		Invoke-PBIRequest -authToken $authToken -method Post -groupId $targetGroupId -resource "reports/$($targetReport.id)/UpdateReportContent" -Body ($bodyObj | ConvertTo-Json)		
 	}	
 }
 
@@ -699,7 +699,7 @@ Function Get-PBIDashboardTile{
 			$scope += "/$tileId"
 		}					
 
-		$tiles = Invoke-PBIRequest -authToken $authToken -method Get -resource $scope -groupId $groupId
+		$tiles = Invoke-PBIRequest -authToken $authToken -method Get -resource $scope -groupId $dashboard.groupId
 
 		Write-Output $tiles
 	}   		
@@ -1002,6 +1002,54 @@ Function New-PBIDataSet{
 	}
 	
 	Write-Output $result
+}
+
+
+Function Remove-PBIDataSet{
+<#
+.SYNOPSIS    
+	Delete a dataset from a workspace
+
+.DESCRIPTION	
+	Delete a dataset from a workspace
+
+.PARAMETER authToken
+    The authorization token required to communicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+
+.PARAMETER dataset
+    A dataset object or id		
+	
+.PARAMETER groupId
+	Id of the workspace
+
+.EXAMPLE			
+		Remove-PBIDataSet -dataset "dataset id"		
+.EXAMPLE			
+		Get-PBIDataset -name "DataSetName" | Remove-PBIDataSet		
+
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+        [Parameter(Mandatory=$true, ValueFromPipeline = $true)] $dataset,
+		[Parameter(Mandatory=$false)] [string] $groupId
+	)
+	
+    begin {
+    }
+	process
+	{		          
+		if ($dataset -is [string])
+		{			
+			$dataset = Get-PBIDataSet -authToken $authToken -id $dataset -groupId $groupId
+		}	
+
+		Invoke-PBIRequest -authToken $authToken -method Delete -resource "datasets/$($dataset.id)" -groupId $dataset.groupId        
+
+        Write-Verbose "Deleted dataset with Id: $($dataset.id)"
+	}     
+	
 }
 
 Function Update-PBITableSchema{
@@ -1591,7 +1639,7 @@ Function Export-PBIReport{
 
 		Write-Verbose "Downloading report '$($report.id)' to '$destinationFolder\$($report.name).pbix"
 	
-		Invoke-PBIRequest -authToken $authToken -method Get -groupId $groupId -resource "reports/$($report.id)/Export" -TimeoutSec $timeout -OutFile "$destinationFolder\$($report.name).pbix" | Out-Null
+		Invoke-PBIRequest -authToken $authToken -method Get -groupId $report.groupId -resource "reports/$($report.id)/Export" -TimeoutSec $timeout -OutFile "$destinationFolder\$($report.name).pbix" | Out-Null
 	}    
 }
 
@@ -1650,7 +1698,7 @@ Function Copy-PBIReports{
 				targetModelId = $targetModelId
 			}
 
-			$res = Invoke-PBIRequest -authToken $authToken -method Post -groupId $groupId -resource "reports/$($report.id)/Clone" -Body ($bodyObj | ConvertTo-Json)
+			$res = Invoke-PBIRequest -authToken $authToken -method Post -groupId $report.groupId -resource "reports/$($report.id)/Clone" -Body ($bodyObj | ConvertTo-Json)
 
 			Write-Output $res	
 		}
@@ -1666,16 +1714,6 @@ Function Set-PBIReportsDataset{
 .SYNOPSIS    
 	Rebind reports to another dataset on the same workspace.
 
-.EXAMPLE
-	Set-PBIReportsDataset -report "ReportId" -targetDatasetId "DataSetId"
-
-.EXAMPLE
-	Get-PBIReport | Set-PBIReportsDataset -targetDatasetId "DataSetId"
-
-.EXAMPLE
-	# Rebind all the reports from Source DataSet to the Target DataSet
-	Set-PBIReportsDataset -sourceDatasetId "SourceDataSetId" -targetDatasetId "DataSetId"
-
 .PARAMETER AuthToken
     The authorization token required to comunicate with the PowerBI APIs
 	Use 'Get-PBIAuthToken' to get the authorization token string
@@ -1689,6 +1727,15 @@ Function Set-PBIReportsDataset{
 .PARAMETER targetDatasetId
 	A string with the new dataset id to bind the reports
 
+.EXAMPLE
+	Set-PBIReportsDataset -report "ReportId" -targetDatasetId "DataSetId"
+
+.EXAMPLE
+	Get-PBIReport | Set-PBIReportsDataset -targetDatasetId "DataSetId"
+
+.EXAMPLE
+	# Rebind all the reports from Source DataSet to the Target DataSet
+	Set-PBIReportsDataset -sourceDatasetId "SourceDataSetId" -targetDatasetId "DataSetId"
 #>
 	[CmdletBinding(DefaultParameterSetName = 'default')]
 	param(									
@@ -1731,7 +1778,7 @@ Function Set-PBIReportsDataset{
 
 			$bodyObj = @{datasetId=$targetDataSet.id}				
 			
-			Invoke-PBIRequest -authToken $authToken -method Post -resource "reports/$($report.id)/Rebind" -Body ($bodyObj | ConvertTo-Json) -groupId $groupId
+			Invoke-PBIRequest -authToken $authToken -method Post -resource "reports/$($report.id)/Rebind" -Body ($bodyObj | ConvertTo-Json) -groupId $report.groupId
 
 		}				
 	}       
@@ -1768,7 +1815,7 @@ Function Request-PBIDatasetRefresh{
 			$dataset = Get-PBIDataSet -authToken $authToken -id $dataset
 		}	
 
-		Invoke-PBIRequest -authToken $authToken -method Post -resource "datasets/$($dataset.id)/refreshes" -groupId $groupId
+		Invoke-PBIRequest -authToken $authToken -method Post -resource "datasets/$($dataset.id)/refreshes" -groupId $dataset.groupId
 
         Write-Verbose "Sent refresh command for dataset '$($dataset.name)' (id: $($dataset.id))"
 	}     
@@ -1819,7 +1866,7 @@ Function Get-PBIDatasetRefreshHistory{
 				
             Write-Verbose "Getting Refresh History for DataSet: $($dataset.name)"
 
-            $res = Invoke-PBIRequest -authToken $authToken -method Get -resource $uriScope -groupId $groupId
+            $res = Invoke-PBIRequest -authToken $authToken -method Get -resource $uriScope -groupId $dataset.groupId
 
             Write-Output $res    
         }
@@ -1855,8 +1902,13 @@ function Get-PBIDatasetParameters{
 	
 	begin {}
 	process
-	{		          
-		$res = Invoke-PBIRequest -authToken $authToken -method Get -resource "datasets/$($dataset.id)/parameters" -groupId $groupId
+	{		        
+        if ($dataset -is [string])
+		{			
+			$dataset = Get-PBIDataSet -authToken $authToken -id $dataset -groupId $groupId
+		}
+  
+		$res = Invoke-PBIRequest -authToken $authToken -method Get -resource "datasets/$($dataset.id)/parameters" -groupId $dataset.groupId
 
         Write-Output $res
 	}   
@@ -1900,9 +1952,14 @@ function Set-PBIDatasetParameters{
 	begin {}
 	process
 	{		          
+        if ($dataset -is [string])
+		{			
+			$dataset = Get-PBIDataSet -authToken $authToken -id $dataset -groupId $groupId
+		}
+
 		$bodyObj = @{updateDetails=$parameters}
 
-        Invoke-PBIRequest -authToken $authToken -method Post -resource "datasets/$($dataset.id)/UpdateParameters" -Body ($bodyObj | ConvertTo-Json)	-groupId $groupId	
+        Invoke-PBIRequest -authToken $authToken -method Post -resource "datasets/$($dataset.id)/UpdateParameters" -Body ($bodyObj | ConvertTo-Json)	-groupId $dataset.groupId	
 
         Write-Verbose "Parameters changed on dataset $($dataset.name) $($dataset.id)"	
 	}   
@@ -1983,7 +2040,7 @@ Function Update-PBIDatasetDatasources {
 
 		# documentation at https://msdn.microsoft.com/en-us/library/mt814715.aspx
 
-		Invoke-PBIRequest -authToken $authToken -method Post -resource "datasets/$($dataset.id)/updatedatasources" -Body $body -groupId $groupid
+		Invoke-PBIRequest -authToken $authToken -method Post -resource "datasets/$($dataset.id)/updatedatasources" -Body $body -groupId $dataset.groupId
 
 	} 
 }
@@ -2008,7 +2065,7 @@ Function Get-PBIDatasources{
 			$dataset = Get-PBIDataSet -authToken $authToken -id $dataset -groupId $groupId
 		}	
 
-		$result = Invoke-PBIRequest -authToken $authToken -method Get -resource "datasets/$($dataset.id)/dataSources" -groupId $groupId
+		$result = Invoke-PBIRequest -authToken $authToken -method Get -resource "datasets/$($dataset.id)/dataSources" -groupId $dataset.groupId
 
     	Write-Output $result
 	} 		
@@ -2045,16 +2102,17 @@ Function Invoke-PBIRequest{
 		'Authorization'= "Bearer $authToken"
 		}    
 
+    if ([string]::IsNullOrEmpty($groupId) -and ![string]::IsNullOrEmpty($script:pbiGroupId))
+    {
+        $groupId = $script:pbiGroupId
+    }
+
 	if (!$ignoreGroup)# -and !$admin)
 	{
 		if (![string]::IsNullOrEmpty($groupId))
 		{
 			$resource = "groups/$groupId/$resource"
-		}		
-		elseif (![string]::IsNullOrEmpty($script:pbiGroupId))
-		{
-			$resource = "groups/$script:pbiGroupId/$resource"
-		}
+		}				
 	}
     
     $url = $script:pbiAPIUrl    
@@ -2071,13 +2129,24 @@ Function Invoke-PBIRequest{
         $result = Invoke-RestMethod -Uri $url -Headers $headers -Method $method -Body $body -ContentType $contentType `
             -TimeoutSec $timeoutSec -OutFile $outFile        
 		
+        $output = $result
+
 		if ($result -ne $null -and $result.PSObject.Properties['value'])
 		{
-			Write-Output $result.value
+			$output = $result.value
 		}
-		else {
-			Write-Output $result
-		}        
+		
+        if ($output)
+        {
+            # Add the groupId to the object
+
+            if (![string]::IsNullOrEmpty($groupId))
+            {
+                $output = $output | Select *, @{Name="groupId"; Expression={ $groupId }} 
+            }
+        
+            Write-Output $output            
+        }
     }
     catch [System.Net.WebException]
     {

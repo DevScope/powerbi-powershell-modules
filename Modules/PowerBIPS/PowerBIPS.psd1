@@ -4,7 +4,7 @@
 RootModule = 'PowerBIPS.psm1'
 
 # Version number of this module.
-ModuleVersion = '2.0.1.3'
+ModuleVersion = '2.0.1.4'
 
 # ID used to uniquely identify this module
 GUID = '163A1640-A4F2-4B1F-A3AF-2796AD56200B'
@@ -72,7 +72,7 @@ FunctionsToExport = @(
 	, "Get-PBIDashboard", "Get-PBIDashboardTile", "New-PBIDashboard"
 	, "Get-PBIReport", "Export-PBIReport", "Copy-PBIReports", "Set-PBIReportsDataset"
     , "Get-PBIDatasources", "Invoke-PBIRequest", "Get-PBIModuleConfig", "Set-PBIModuleConfig"    
-    , "Set-PBIReportContent", "Get-PBIAuthTokenHttp"
+    , "Set-PBIReportContent", "Get-PBIAuthTokenHttp", "Remove-PBIDataSet"
 )
 
 # Cmdlets to export from this module

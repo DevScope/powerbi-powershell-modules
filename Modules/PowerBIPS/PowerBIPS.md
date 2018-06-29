@@ -254,4 +254,7 @@ $counters | Get-Counter -Continuous -SampleInterval 5 |%{
 
 ### [New-PBIDashboard](doc/New-PBIDashboard.md)
 
+### [Remove-PBIDataSet](doc/Remove-PBIDataSet.md)
+
+
 
