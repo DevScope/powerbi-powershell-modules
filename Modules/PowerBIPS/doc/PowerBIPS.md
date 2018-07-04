@@ -89,6 +89,9 @@ Locale: en-US
 ### [Remove-PBIDataSet](Remove-PBIDataSet.md)
 {{Manually Enter Remove-PBIDataSet Description Here}}
 
+### [Remove-PBIReport](Remove-PBIReport.md)
+{{Manually Enter Remove-PBIReport Description Here}}
+
 ### [Request-PBIDatasetRefresh](Request-PBIDatasetRefresh.md)
 {{Manually Enter Request-PBIDatasetRefresh Description Here}}
 

@@ -256,5 +256,7 @@ $counters | Get-Counter -Continuous -SampleInterval 5 |%{
 
 ### [Remove-PBIDataSet](doc/Remove-PBIDataSet.md)
 
+### [Remove-PBIReport](doc/Remove-PBIReport.md)
+
 
 
