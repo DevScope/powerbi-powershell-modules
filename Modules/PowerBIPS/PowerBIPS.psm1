@@ -1052,6 +1052,54 @@ Function Remove-PBIDataSet{
 	
 }
 
+Function Remove-PBIReport{
+	<#
+	.SYNOPSIS    
+		Delete a report from a workspace
+	
+	.DESCRIPTION	
+		Delete a report from a workspace
+	
+	.PARAMETER authToken
+		The authorization token required to communicate with the PowerBI APIs
+		Use 'Get-PBIAuthToken' to get the authorization token string
+	
+	.PARAMETER report
+		A report object or id		
+		
+	.PARAMETER groupId
+		Id of the workspace
+	
+	.EXAMPLE			
+			Remove-PBIReport -dataset "dataset id"		
+	.EXAMPLE			
+			Get-PBIDataset -name "DataSetName" | Remove-PBIReport		
+	
+	#>
+		[CmdletBinding()]		
+		param(									
+			[Parameter(Mandatory=$false)] [string] $authToken,
+			[Parameter(Mandatory=$true, ValueFromPipeline = $true)] $report,
+			[Parameter(Mandatory=$false)] [string] $groupId
+		)
+		
+		begin {
+		}
+		process
+		{		          
+			if ($report -is [string])
+			{			
+				$report = Get-PBIReport -authToken $authToken -id $report -groupId $groupId
+			}	
+	
+			Invoke-PBIRequest -authToken $authToken -method Delete -resource "reports/$($report.id)" -groupId $report.groupId        
+	
+			Write-Verbose "Deleted report with Id: $($report.id)"
+		}     
+		
+	}
+	
+
 Function Update-PBITableSchema{
 <#
 .SYNOPSIS
