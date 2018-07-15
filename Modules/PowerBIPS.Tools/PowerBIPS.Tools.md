@@ -55,9 +55,24 @@ $dataSetSchema = New-PBIDataSet -authToken $authToken -dataSet $dataSetSchema -i
 
 ```
 
+## Sample Script - Create a PushDataset from Power BI Desktop
+
+```powershell
+
+# Get a PBIDataSet schema from PBIDesktop
+$dataSet = Get-PBIDataSetFromPBIDesktop -pbiDesktopWindowName "*PBI Window*" -datasetName "PushDataSet"
+
+# Create the REST API dataset on powerbi.com
+$dataSet = New-PBIDataSet -dataSet $dataSet -groupId "workspace Id"
+
+```
+
 ## PowerBIPS.Tools Cmdlets
 ### [Convert-PowerBIDesktopToASTabular](doc/Convert-PowerBIDesktopToASTabular.md)
 Convert from a Power BI Desktop into AS Tabular Project
+
+### [Get-PBIDataSetFromPBIDesktop](doc/Get-PBIDataSetFromPBIDesktop.md)
+Get's a PowerBI Dataset Schema from Power BI Desktop to create a Push DataSet
 
 ### [Export-PBIDesktopToCSV](doc/Export-PBIDesktopToCSV.md)
 Exports the tables from a Power BI Desktop model into CSV files
