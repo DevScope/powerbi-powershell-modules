@@ -8,7 +8,7 @@ schema: 2.0.0
 # Import-PBIFile
 
 ## SYNOPSIS
-{{Fill in the Synopsis}}
+Creates new content on the specified workspace from a .pbix file.
 
 ## SYNTAX
 
@@ -18,21 +18,34 @@ Import-PBIFile [[-authToken] <String>] [-file] <Object> [[-dataSetName] <String>
 ```
 
 ## DESCRIPTION
-{{Fill in the Description}}
+Creates new content on the specified workspace from a .pbix file.
 
 ## EXAMPLES
 
-### Example 1
-```powershell
-PS C:\> {{ Add example code here }}
+### EXAMPLE 1
+```
+$file = Resolve-Path .\Samples\PBIX\MyMovies.pbix
 ```
 
-{{ Add example description here }}
+$authToken = Get-PBIAuthToken -Verbose
+Import-PBIFile -authToken $authToken -file $file -verbose
+
+### EXAMPLE 2
+```
+$file = Resolve-Path .\Samples\PBIX\MyMovies.pbix
+```
+
+$authToken = Get-PBIAuthToken -Verbose
+$group = Get-PBIGroup -name "Test Workspace"
+$result = Import-PBIFile -authToken $authToken -groupId $($group.id) -file $file -verbose
+$importResult = Get-PBIImports $authToken -groupId $($group.id) -importId $($id.id)
+$importResult | Out-GridView
 
 ## PARAMETERS
 
 ### -authToken
-{{Fill authToken Description}}
+The authorization token required to comunicate with the PowerBI APIs.
+Use \`Get-PBIAuthToken\` to get the authorization token string.
 
 ```yaml
 Type: String
@@ -40,29 +53,14 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 0
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -dataSetName
-{{Fill dataSetName Description}}
-
-```yaml
-Type: String
-Parameter Sets: (All)
-Aliases:
-
-Required: False
-Position: 2
+Position: 1
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
 ### -file
-{{Fill file Description}}
+The full path to the .pbix file.
 
 ```yaml
 Type: Object
@@ -70,14 +68,29 @@ Parameter Sets: (All)
 Aliases:
 
 Required: True
-Position: 1
+Position: 2
 Default value: None
 Accept pipeline input: True (ByValue)
 Accept wildcard characters: False
 ```
 
-### -groupId
-{{Fill groupId Description}}
+### -dataSetName
+The display name of the dataset, should include file extension.
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 3
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -nameConflict
+Determines what to do if a dataset with the same name already exists.
 
 ```yaml
 Type: String
@@ -86,22 +99,21 @@ Aliases:
 
 Required: False
 Position: 4
-Default value: None
+Default value: Ignore
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -nameConflict
-{{Fill nameConflict Description}}
+### -groupId
+The workspace ID.
 
 ```yaml
 Type: String
 Parameter Sets: (All)
 Aliases:
-Accepted values: Abort, Overwrite, Ignore
 
 Required: False
-Position: 3
+Position: 5
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -113,13 +125,9 @@ For more information, see about_CommonParameters (http://go.microsoft.com/fwlink
 
 ## INPUTS
 
-### System.Object
-
-
 ## OUTPUTS
 
-### System.Object
-
 ## NOTES
+To import .pbix files larger than 1 GB, see https://docs.microsoft.com/en-us/rest/api/power-bi/imports/createtemporaryuploadlocation, suported only for workspaces on premium capacity.
 
 ## RELATED LINKS
