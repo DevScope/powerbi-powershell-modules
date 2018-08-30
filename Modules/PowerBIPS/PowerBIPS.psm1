@@ -944,7 +944,7 @@ Function New-PBIDataSet{
 #>
 	[CmdletBinding()]	
 	param(									
-		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$true, HelpMessage = "Must be of type [hashtable] or [dataset]")] $dataSet,
 		[Parameter(Mandatory=$false)] [string]$defaultRetentionPolicy,
 		[Parameter(Mandatory=$false)] [hashtable]$types,
@@ -1682,7 +1682,7 @@ Function Export-PBIReport{
 	{		       
 		if ($report -is [string])
 		{			
-			$report = Get-PBIReport -authToken $authToken -id $report
+			$report = Get-PBIReport -authToken $authToken -id $report -groupId $groupId
 		}		
 
 		Write-Verbose "Downloading report '$($report.id)' to '$destinationFolder\$($report.name).pbix"
@@ -1808,7 +1808,7 @@ Function Set-PBIReportsDataset{
 	}
 	process
 	{		          
-		if (!$reportArray)
+		if ($report -ne $null)
 		{
 			if ($report -is [string])
 			{			
