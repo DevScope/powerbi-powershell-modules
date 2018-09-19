@@ -944,7 +944,7 @@ Function New-PBIDataSet{
 #>
 	[CmdletBinding()]	
 	param(									
-		[Parameter(Mandatory=$true)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$true, HelpMessage = "Must be of type [hashtable] or [dataset]")] $dataSet,
 		[Parameter(Mandatory=$false)] [string]$defaultRetentionPolicy,
 		[Parameter(Mandatory=$false)] [hashtable]$types,
@@ -1571,6 +1571,45 @@ Function Get-PBIImports{
 }
 
 Function Import-PBIFile{
+<#
+.SYNOPSIS
+	Creates new content on the specified workspace from a .pbix file.
+
+.DESCRIPTION
+	Creates new content on the specified workspace from a .pbix file.
+
+.PARAMETER authToken
+    The authorization token required to comunicate with the PowerBI APIs.
+	Use `Get-PBIAuthToken` to get the authorization token string.
+
+.PARAMETER file
+	The full path to the .pbix file.
+
+.PARAMETER dataSetName
+	The display name of the dataset, should include file extension.
+
+.PARAMETER nameConflict
+	Determines what to do if a dataset with the same name already exists.
+
+.PARAMETER groupId
+	The workspace ID.
+
+.EXAMPLE
+	$file = Resolve-Path .\Samples\PBIX\MyMovies.pbix
+	$authToken = Get-PBIAuthToken -Verbose
+	Import-PBIFile -authToken $authToken -file $file -verbose
+
+.EXAMPLE
+	$file = Resolve-Path .\Samples\PBIX\MyMovies.pbix
+	$authToken = Get-PBIAuthToken -Verbose
+	$group = Get-PBIGroup -name "Test Workspace"
+	$result = Import-PBIFile -authToken $authToken -groupId $($group.id) -file $file -verbose
+	$importResult = Get-PBIImports $authToken -groupId $($group.id) -importId $($id.id)
+	$importResult | Out-GridView
+
+.NOTES
+	To import .pbix files larger than 1 GB, see https://docs.microsoft.com/en-us/rest/api/power-bi/imports/createtemporaryuploadlocation, suported only for workspaces on premium capacity.
+#>
 	[CmdletBinding()]		
 	param(		
 		[Parameter(Mandatory=$false)] [string] $authToken,
@@ -1682,7 +1721,7 @@ Function Export-PBIReport{
 	{		       
 		if ($report -is [string])
 		{			
-			$report = Get-PBIReport -authToken $authToken -id $report
+			$report = Get-PBIReport -authToken $authToken -id $report -groupId $groupId
 		}		
 
 		Write-Verbose "Downloading report '$($report.id)' to '$destinationFolder\$($report.name).pbix"
@@ -1808,7 +1847,7 @@ Function Set-PBIReportsDataset{
 	}
 	process
 	{		          
-		if (!$reportArray)
+		if ($report -ne $null)
 		{
 			if ($report -is [string])
 			{			
