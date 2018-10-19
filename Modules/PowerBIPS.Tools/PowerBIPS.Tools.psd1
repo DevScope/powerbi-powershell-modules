@@ -4,7 +4,7 @@
 RootModule = 'PowerBIPS.Tools.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.0.2'
+ModuleVersion = '1.0.1.3'
 
 # ID used to uniquely identify this module
 GUID = '4380560b-ec14-4627-af81-635405ceb29f'
@@ -44,7 +44,7 @@ For example:
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @("SQLHelper")
+RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
  RequiredAssemblies = @(".\Microsoft.AnalysisServices.dll"
@@ -65,11 +65,12 @@ RequiredModules = @("SQLHelper")
 # FormatsToProcess = @()
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-# NestedModules = @()
+NestedModules = @(".\SQLHelper.psm1")
 
 # Functions to export from this module
 FunctionsToExport = @(
-	"Get-PBIDesktopTCPPort", "Convert-PowerBIDesktopToASTabular", "Export-PBIDesktopToSQL", "Export-PBIDesktopToCSV","Get-PBIDataSetFromPBIDesktop"
+    "Get-PBIDesktopTCPPort", "Convert-PowerBIDesktopToASTabular", "Export-PBIDesktopToSQL", "Export-PBIDesktopToCSV","Get-PBIDataSetFromPBIDesktop"
+    , "Export-PBIDesktopODCConnection"
 )
 
 # Cmdlets to export from this module
@@ -82,7 +83,7 @@ VariablesToExport = @()
 AliasesToExport = '*'
 
 # List of all modules packaged with this module
-# ModuleList = @()
+ModuleList = @(".\SQLHelper.psm1")
 
 # List of all files packaged with this module
 FileList = @("Microsoft.AnalysisServices.Core.dll"

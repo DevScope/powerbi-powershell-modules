@@ -5,25 +5,25 @@ online version:
 schema: 2.0.0
 ---
 
-# Get-PBIDesktopTCPPort
+# Export-PBIDesktopODCConnection
 
 ## SYNOPSIS
-Returns the Power BI Desktop Analysis Services Instance TCP Port
+Exports a PBIDesktop ODC connection file
 
 ## SYNTAX
 
 ```
-Get-PBIDesktopTCPPort [[-pbiDesktopWindowName] <String>] [<CommonParameters>]
+Export-PBIDesktopODCConnection [[-pbiDesktopWindowName] <String>] [[-path] <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Returns the Power BI Desktop Analysis Services Instance TCP Port
+Exports a PBIDesktop ODC connection file
 
 ## EXAMPLES
 
 ### EXAMPLE 1
 ```
-Get-PBIDesktopTCPPort -pbiDesktopWindowName "*VanArsdel - Sales*"
+Export-PBIDesktopODCConnection -pbiDesktopWindowName "*VanArsdel - Sales*"
 ```
 
 ## PARAMETERS
@@ -39,6 +39,21 @@ Aliases:
 
 Required: False
 Position: 1
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -path
+ODC file path to be created
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 2
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False

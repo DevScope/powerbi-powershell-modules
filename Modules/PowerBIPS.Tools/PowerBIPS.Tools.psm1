@@ -81,7 +81,8 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
 
             # Get the PBI window port
      
-            $port = Get-PBIDesktopTCPPort $pbiDesktopWindowName
+            $obj = Get-PBIDesktopTCPPort $pbiDesktopWindowName
+            $port = $obj.Port
 
             $dataSource = "localhost:$port"
             
@@ -254,8 +255,9 @@ Export-PBIDesktopToCSV -pbiDesktopWindowName "*Van Arsdel*" -outputPath ".\CSVOu
 		[string] $outputPath		
       )
         
-    $port = Get-PBIDesktopTCPPort $pbiDesktopWindowName
-	
+    $obj = Get-PBIDesktopTCPPort $pbiDesktopWindowName
+    $port = $obj.Port
+    
 	$dataSource = "localhost:$port"
 	
 	Write-Verbose "Connecting into PBIDesktop TCP port: '$dataSource'"
@@ -399,7 +401,8 @@ param(
  
     #get port and database model
     
-    $port = Get-PBIDesktopTCPPort $pbiDesktopWindowName
+    $obj = Get-PBIDesktopTCPPort $pbiDesktopWindowName
+    $port = $obj.Port
 
     $dataSource = "localhost:$port"
     
@@ -538,8 +541,9 @@ Export-PBIDesktopToSQL -pbiDesktopWindowName "*Van Arsdel*" -sqlConnStr "Data So
         $sqlSchema = "dbo"		
     )
 
-	$port = Get-PBIDesktopTCPPort $pbiDesktopWindowName
-	
+	$obj = Get-PBIDesktopTCPPort $pbiDesktopWindowName
+    $port = $obj.Port
+    
 	$dataSource = "localhost:$port"
 	
 	Write-Verbose "Connecting into PBIDesktop TCP port: '$dataSource'"
@@ -603,7 +607,7 @@ Get-PBIDesktopTCPPort -pbiDesktopWindowName "*VanArsdel - Sales*"
 	[CmdletBinding()]
     param
     (
-        [Parameter(Mandatory = $true)]        
+        [Parameter(Mandatory = $false)]        
 		[string]
         $pbiDesktopWindowName	
     )
@@ -617,7 +621,7 @@ Get-PBIDesktopTCPPort -pbiDesktopWindowName "*VanArsdel - Sales*"
 		throw "No PBIDesktop windows opened"
 	}
 	
-	$matchedWindows = $pbiProcesses |? MainWindowTitle -like $pbiDesktopWindowName
+	$matchedWindows = @($pbiProcesses |? { $_.MainWindowTitle -like $pbiDesktopWindowName -or [string]::IsNullOrEmpty($pbiDesktopWindowName) })
 	
 	if ($matchedWindows.Count -eq 0)
 	{
@@ -625,23 +629,79 @@ Get-PBIDesktopTCPPort -pbiDesktopWindowName "*VanArsdel - Sales*"
 	}
 	
 	# Select the first match
-	
-	$matchedProcess = $matchedWindows[0]
-	$matchedProcessTitle = $matchedProcess.MainWindowTitle
-	
-	Write-Verbose "Processing PBIDesktop file: '$matchedProcessTitle'"
-	
-	$processPorts = $pbiProcessesPorts |? OwningProcess -eq $matchedProcess.Id
-	
-	if ($processPorts.Count -eq 0)
-	{
-		throw "No TCP Port for PBIDesktop process '$matchedProcessTitle"
-	}
-	
-	$port = $processPorts[0].RemotePort
-	
-	$port
+    
+    $matchedWindows |% {
+        
+        $matchedProcess = $_
+
+        $matchedProcessTitle = $matchedProcess.MainWindowTitle
+        
+        Write-Verbose "Processing PBIDesktop file: '$matchedProcessTitle'"
+        
+        $processPorts = $pbiProcessesPorts |? OwningProcess -eq $matchedProcess.Id
+        
+        if ($processPorts.Count -eq 0)
+        {
+            throw "No TCP Port for PBIDesktop process '$matchedProcessTitle"
+        }
+        
+        $port = $processPorts[0].RemotePort
+        
+        Write-Output @{WindowTitle=$matchedProcessTitle; Port = $port}
+    }
 }
+
+Function Export-PBIDesktopODCConnection
+{  
+<#
+.SYNOPSIS
+Exports a PBIDesktop ODC connection file
+.DESCRIPTION
+Exports a PBIDesktop ODC connection file
+.PARAMETER pbiDesktopWindowName
+Power BI Desktop window name, wildcards can be used. Ex: "*name*"
+.PARAMETER path
+ODC file path to be created
+.EXAMPLE
+Export-PBIDesktopODCConnection -pbiDesktopWindowName "*VanArsdel - Sales*"
+#>
+	[CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory = $false)]        
+		[string]
+        $pbiDesktopWindowName,
+        [Parameter(Mandatory = $false)]        
+		[string]
+        $path	
+    )
+    
+    $pbiDesktopWindows = Get-PBIDesktopTCPPort -pbiDesktopWindowName $pbiDesktopWindowName
+
+    if ([string]::IsNullOrEmpty($path))
+    {
+        $path = "."
+    }
+
+    $pbiDesktopWindows |% {
+
+        $obj = $_
+        
+        $port = $obj.Port
+
+        $odcXml = "<html xmlns:o=""urn:schemas-microsoft-com:office:office""xmlns=""http://www.w3.org/TR/REC-html40""><head><meta http-equiv=Content-Type content=""text/x-ms-odc; charset=utf-8""><meta name=ProgId content=ODC.Cube><meta name=SourceType content=OLEDB><meta name=Catalog content=164af183-2454-4f45-964a-c200f51bcd59><meta name=Table content=Model><title>PBIDesktop Model</title><xml id=docprops><o:DocumentProperties  xmlns:o=""urn:schemas-microsoft-com:office:office""  xmlns=""http://www.w3.org/TR/REC-html40"">  <o:Name>PBIDesktop Model</o:Name> </o:DocumentProperties></xml><xml id=msodc><odc:OfficeDataConnection  xmlns:odc=""urn:schemas-microsoft-com:office:odc""  xmlns=""http://www.w3.org/TR/REC-html40"">  <odc:Connection odc:Type=""OLEDB"">   
+        <odc:ConnectionString>Provider=MSOLAP;Integrated Security=ClaimsToken;Data Source=localhost:$port;MDX Compatibility= 1; MDX Missing Member Mode= Error; Safety Options= 2; Update Isolation Level= 2; Locale Identifier= 1033</odc:ConnectionString>   
+        <odc:CommandType>Cube</odc:CommandType>   <odc:CommandText>Model</odc:CommandText>  </odc:Connection> </odc:OfficeDataConnection></xml></head></html>"   
+                
+        Write-Verbose "Exporting ODC for window '$($obj.WindowTitle)'"
+        
+        $odcFile = "$path\$($obj.WindowTitle).odc"
+
+        $odcXml | Out-File $odcFile -Force	
+
+    }    
+}
+
 
 #region Private
 

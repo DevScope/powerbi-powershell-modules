@@ -1,7 +1,7 @@
 cls
 
 
-$currentPath = (Split-Path $MyInvocation.MyCommand.Definition –Parent)
+$currentPath = (Split-Path $MyInvocation.MyCommand.Definition -Parent)
 
 Import-Module platyPS
 
