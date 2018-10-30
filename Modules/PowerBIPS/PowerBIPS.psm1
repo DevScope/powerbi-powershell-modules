@@ -1899,7 +1899,7 @@ Function Request-PBIDatasetRefresh{
 	{		          
 		if ($dataset -is [string])
 		{			
-			$dataset = Get-PBIDataSet -authToken $authToken -id $dataset
+			$dataset = Get-PBIDataSet -authToken $authToken -id $dataset -groupId $groupId
 		}	
 
 		Invoke-PBIRequest -authToken $authToken -method Post -resource "datasets/$($dataset.id)/refreshes" -groupId $dataset.groupId
