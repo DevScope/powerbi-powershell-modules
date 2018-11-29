@@ -2168,7 +2168,7 @@ Function Invoke-PBIRequest{
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$true)] [string] $resource,
-        [Parameter(Mandatory=$false)] [ValidateSet('Get','Post','Delete', 'Put')] [string] $method = "Get",
+        [Parameter(Mandatory=$false)] [ValidateSet('Get','Post','Delete', 'Put', 'Patch')] [string] $method = "Get",
         [Parameter(Mandatory=$false)] $body,        
         [Parameter(Mandatory=$false)] [ValidateSet('Individual','Admin')] [string] $scope = "Individual",
         [Parameter(Mandatory=$false)] [string] $contentType = "application/json",
