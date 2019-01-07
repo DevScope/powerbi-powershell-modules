@@ -803,23 +803,42 @@ Function Get-CleanMCode{
 
        # lets create expressions for each shared
       
-       $ex = $mcode.Split(';')
+       #$ex = $mcode.Split(';')
+       $ex = $mcode -split "shared "
 
         For ($i=1; $i -lt $ex.Count-1; $i++) {
 
-            $ex[$i] = $ex[$i].Trim()
+            if(-Not ($ex[$i].Contains("IsParameterQuery")))
+            {
+                $ex[$i] = $ex[$i].Trim()
 
-            $ex[$i] = $ex[$i].Remove(0,6)
+                #$ex[$i] = $ex[$i].Remove(0,6)
 
-            $tam = $ex[$i].indexOf('=') + 1
+                $tam = $ex[$i].indexOf('=') + 1
 
-            $M = New-Object PSObject -Property @{
-                 hiddenTable = $true
-                 expression = $ex[$i].Substring($tam,$ex[$i].Length-$tam)
-                 name = $ex[$i].Split('=')[0]
-             } 
+                #Remove extra auto code coming from PowerBI
+                $t = ($ex[$i].Substring($tam,$ex[$i].Length-$tam)) -split "AutoRemovedColumns1"
 
-            $colletion += $M
+                $dd = $t[0].Trim().Split([Environment]::NewLine)
+                
+                #Remove last comma
+                $t[0] = $t[0].Trim();
+                $t[0] = $t[0].Substring(0, ($t[0].Length)-1)
+
+                #Get last identifier
+                $lastId = $dd[-1].Split('=')
+
+                #Fix the ending
+                $t[0] += [Environment]::NewLine + " in " + $lastId[0].Trim()
+
+                $M = New-Object PSObject -Property @{
+                    hiddenTable = $true
+                    expression = $t[0]
+                    name = $ex[$i].Split('=')[0]
+                } 
+
+                $colletion += $M
+            }
          }
     }
 
