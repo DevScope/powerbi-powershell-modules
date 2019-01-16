@@ -143,7 +143,7 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
                     {                        
                        foreach($obj in $mExpression) 
                        {
-                            if ($obj.name.Trim() -eq $table.Name.Trim()) 
+                            if ($obj.name.Replace("#","").Replace('"','').Trim() -eq $table.Name.Trim()) 
                             { 
                                 $mExpression = $obj.expression 
                             }                            
@@ -806,7 +806,7 @@ Function Get-CleanMCode{
        #$ex = $mcode.Split(';')
        $ex = $mcode -split "shared "
 
-        For ($i=1; $i -lt $ex.Count-1; $i++) {
+        For ($i=1; $i -le $ex.Count-1; $i++) {
 
             if(-Not ($ex[$i].Contains("IsParameterQuery")))
             {
