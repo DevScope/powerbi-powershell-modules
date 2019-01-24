@@ -32,7 +32,7 @@ THE SOFTWARE.
 
 #region Constants/Variables
 
-$script:pbiAuthorityUrl = "https://login.microsoftonline.com/common/oauth2/authorize"
+$script:pbiAuthorityUrl = "https://login.microsoftonline.com/common"
 $script:pbiResourceUrl = "https://analysis.windows.net/powerbi/api"
 $script:pbiDefaultAuthRedirectUri = "https://login.live.com/oauth20_desktop.srf"
 $script:pbiDefaultClientId = "053e0da1-7eb4-4b9a-aa07-6f41d0f35cef"
@@ -215,7 +215,7 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
             $authorityUrl = $authorityUrl.Replace("/common/","/$tenantId/")
         }
 
-        $script:AuthContext = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext -ArgumentList ($authorityUrl)
+        $script:AuthContext = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext -ArgumentList ($authorityUrl)         
     }
 
 	if ([string]::IsNullOrEmpty($clientId))
@@ -2565,3 +2565,4 @@ function ParseErrorForResponseBody($Error) {
 }
 
 #endregion
+

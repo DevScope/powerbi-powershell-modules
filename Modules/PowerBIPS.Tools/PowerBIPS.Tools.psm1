@@ -55,6 +55,10 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
         $outputPath
         ,
         [Parameter(Mandatory = $false)]
+        [int]
+        $compatibilityLevel = 1400
+        ,
+        [Parameter(Mandatory = $false)]
         [switch]
         $removeInternalPBITables
 	)
@@ -184,6 +188,7 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
         
         $database.Model.DataSources.Clear()
 
+        $database.CompatibilityLevel = $compatibilityLevel
         $serializeOptions = new-object Microsoft.AnalysisServices.Tabular.SerializeOptions        
         $serializeOptions.IgnoreTimestamps = $true
         $serializeOptions.IgnoreInferredProperties = $true
