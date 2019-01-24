@@ -149,7 +149,7 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
                             }                            
                             else 
                             {
-                                $exist = $database.Model.Expressions |? { $_.Name.Trim() -eq $obj.name.Trim() }
+                                $exist = $database.Model.Expressions | Where-Object { $_.Name.Trim() -eq $obj.name.Trim() }
 
                                 if ($exist.Count -eq 0 -and -not($obj.name.Trim().Contains("QueryBinding")))
                                 {
