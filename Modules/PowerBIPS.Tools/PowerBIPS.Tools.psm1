@@ -151,7 +151,9 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
                             {
                                 $exist = $database.Model.Expressions | Where-Object { $_.Name.Trim() -eq $obj.name.Trim() }
 
-                                if ($exist.Count -eq 0 -and -not($obj.name.Trim().Contains("QueryBinding")))
+                                if ($exist.Count -eq 0 `
+                                        -and -not($obj.name.Trim().Contains("QueryBinding")) `
+                                        -and -not($obj.hiddenTable))
                                 {
                                     $ex = new-object Microsoft.AnalysisServices.Tabular.NamedExpression
 
