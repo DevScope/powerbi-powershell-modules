@@ -62,7 +62,7 @@ FunctionsToExport = @(
 	"Get-PBIAuthToken"
 	, "Set-PBIGroup", "Get-PBIGroup", "Get-PBIGroupUsers", "New-PBIGroup", "New-PBIGroupUser"
 	, "Out-PowerBI"	
-    , "Get-PBIDataSet", "Get-PBIDataSetTables", "Test-PBIDataSet", "New-PBIDataSet", "Request-PBIDatasetRefresh"
+    , "Get-PBIDataSet", "Get-PBIGroupDatasets", "Get-PBIDataSetTables", "Test-PBIDataSet", "New-PBIDataSet", "Request-PBIDatasetRefresh"
     , "Get-PBIDatasetRefreshHistory", "Update-PBIDatasetDatasources"
     , "Get-PBIDatasetParameters", "Set-PBIDatasetParameters"
 	, "Add-PBITableRows", "Clear-PBITableRows", "Update-PBITableSchema"	
