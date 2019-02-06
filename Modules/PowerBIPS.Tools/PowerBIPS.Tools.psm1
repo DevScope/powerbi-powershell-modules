@@ -157,7 +157,7 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
 
                                 if ($exist.Count -eq 0 `
                                         -and -not($obj.name.Trim().Contains("QueryBinding")) `
-                                        -and -not($obj.hiddenTable))
+                                        )
                                 {
                                     $ex = new-object Microsoft.AnalysisServices.Tabular.NamedExpression
 
@@ -819,8 +819,6 @@ Function Get-CleanMCode{
             {
                 $ex[$i] = $ex[$i].Trim()
 
-                #$ex[$i] = $ex[$i].Remove(0,6)
-
                 $tam = $ex[$i].indexOf('=') + 1
 
                 #Remove extra auto code coming from PowerBI
@@ -836,7 +834,10 @@ Function Get-CleanMCode{
                 $lastId = $dd[-1].Split('=')
 
                 #Fix the ending
-                $t[0] += [Environment]::NewLine + " in " + $lastId[0].Trim()
+                if(-Not ($t[0].Contains(" in ") -or $t[0].Contains([Environment]::NewLine+"in"+[Environment]::NewLine)))
+                { 
+                    $t[0] += [Environment]::NewLine + " in " + $lastId[0].Trim()
+                }
 
                 $M = New-Object PSObject -Property @{
                     hiddenTable = $true
