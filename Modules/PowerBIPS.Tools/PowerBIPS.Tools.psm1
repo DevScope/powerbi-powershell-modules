@@ -834,7 +834,7 @@ Function Get-CleanMCode{
                 $lastId = $dd[-1].Split('=')
 
                 #Fix the ending
-                if(-Not ($t[0].Contains(" in ") -or $t[0].Contains([Environment]::NewLine+"in"+[Environment]::NewLine)))
+                if(-Not ($t[0] -match '[\s.*]in[\s.*](?=([^"\\]*(\\.|"([^"\\]*\\.)*[^"\\]*"))*[^"]*$)'))
                 { 
                     $t[0] += [Environment]::NewLine + " in " + $lastId[0].Trim()
                 }
