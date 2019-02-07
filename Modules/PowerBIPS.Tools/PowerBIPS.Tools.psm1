@@ -149,29 +149,32 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
                        {
                             if ($obj.name.Replace("#","").Replace('"','').Trim() -eq $table.Name.Trim()) 
                             { 
-                                $mExpression = $obj.expression 
-                            }                            
-                            else 
-                            {
-                                $exist = $database.Model.Expressions | Where-Object { $_.Name.Trim() -eq $obj.name.Trim() }
-
-                                if ($exist.Count -eq 0 `
-                                        -and -not($obj.name.Trim().Contains("QueryBinding")) `
-                                        )
+                                if($table.Name.Contains(' '))
                                 {
-                                    $ex = new-object Microsoft.AnalysisServices.Tabular.NamedExpression
+                                    $mExpression = "let`n`tSource = #`"$($obj.name.Trim())`"`nin Source"
+                                } else {
+                                    $mExpression = "let`n`tSource = $($obj.name)`nin Source"
+                                }
+                            }  
+                                                      
+                            $exist = $database.Model.Expressions | Where-Object { $_.Name.Trim() -eq $obj.name.Trim() }
 
-                                    $ex.Name = $obj.name.Trim()
+                            if ($exist.Count -eq 0 `
+                                    -and -not($obj.name.Trim().Contains("QueryBinding")) `
+                                    )
+                            {
+                                $ex = new-object Microsoft.AnalysisServices.Tabular.NamedExpression
+                                    
+                                $ex.Name = $obj.name.Trim()
 
-                                    $ex.Kind = new-object Microsoft.AnalysisServices.Tabular.ExpressionKind
+                                $ex.Kind = new-object Microsoft.AnalysisServices.Tabular.ExpressionKind
 
-                                    $ex.Description = ""
+                                $ex.Description = ""
 
-                                    $ex.Expression = $obj.expression
+                                $ex.Expression = $obj.expression
 
-                                    $database.Model.Expressions.Add($ex)
-                                } 
-                            }                          
+                                $database.Model.Expressions.Add($ex)
+                            }                         
                         }
                        
                     }                
@@ -846,6 +849,12 @@ Function Get-CleanMCode{
                 } 
 
                 $colletion += $M
+            } else { # parameter expressions
+                $colletion += New-Object PSObject -Property @{
+                    hiddenTable = $true
+                    expression = $ex[$i].Split('=',2)[1].Replace(";","").Replace("`r","").Replace("`n","").Trim()
+                    name = $ex[$i].Split('=')[0].Replace('#"','').Replace('"','')
+                }
             }
          }
     }
