@@ -842,7 +842,7 @@ Function Get-CleanMCode{
                 $M = New-Object PSObject -Property @{
                     hiddenTable = $true
                     expression = $t[0]
-                    name = $ex[$i].Split('=')[0]
+                    name = $ex[$i].Split('=')[0].Replace('#"','').Replace('"','')
                 } 
 
                 $colletion += $M
