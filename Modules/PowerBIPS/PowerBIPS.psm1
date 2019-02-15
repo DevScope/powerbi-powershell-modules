@@ -1616,7 +1616,7 @@ Function Import-PBIFile{
 		[Parameter(Mandatory=$true, ValueFromPipeline = $true)] $file,
 		[Parameter(Mandatory=$false)] [string] $dataSetName,
 		[Parameter(Mandatory=$false)]
-		[ValidateSet("Abort","Overwrite","Ignore")]
+		[ValidateSet("Abort","Overwrite","Ignore","CreateOrOverwrite")]
 		[string]$nameConflict = "Ignore",
 		[Parameter(Mandatory=$false)] [string] $groupId
 	)
