@@ -201,7 +201,11 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
         $clientSecret,
         [Parameter(Mandatory=$false)]
         [switch]
-		$returnADALObj = $false
+		$returnADALObj = $false,
+		[switch]
+		$deviceCodeFlow = $false,
+		[string]
+		$tokenCacheFile
 	)
 
     if ($Script:AuthContext -eq $null)
@@ -215,7 +219,16 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
             $authorityUrl = $authorityUrl.Replace("/common/","/$tenantId/")
         }
 
-        $script:AuthContext = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext -ArgumentList ($authorityUrl)         
+		$tokenCache = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.TokenCache
+
+		if (![string]::IsNullOrEmpty($tokenCacheFile) -and (Test-Path $tokenCacheFile))
+		{
+			$bytes = [System.IO.File]::ReadAllBytes($tokenCacheFile)
+
+			$tokenCache = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.TokenCache(,$bytes)
+		}
+		
+        $script:AuthContext = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext -ArgumentList ($authorityUrl, $tokenCache)    
     }
 
 	if ([string]::IsNullOrEmpty($clientId))
@@ -248,7 +261,28 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
         $AuthResult = $script:AuthContext.AcquireTokenAsync(
           $script:pbiResourceUrl
         , $clientCredential).Result
-    }
+	}
+	elseif($deviceCodeFlow)
+	{
+		# if there's a token in cache reuse
+
+		if ($script:AuthContext.TokenCache.Count -gt 0)
+		{
+			$AuthResult = $script:AuthContext.AcquireTokenSilentAsync($script:pbiResourceUrl, $clientId).Result
+		}
+		else
+		{
+			$deviceCode = $script:AuthContext.AcquireDeviceCodeAsync($script:pbiResourceUrl, $clientId).Result
+
+			Write-Host "Go to '$($deviceCode.VerificationUrl)' and enter device code: '$($deviceCode.UserCode)'"
+			
+			$task = $script:AuthContext.AcquireTokenByDeviceCodeAsync($deviceCode)
+			
+			$task.Wait()
+
+			$AuthResult = $task.Result
+		}
+	}
     else
     {
 		Write-Verbose -Message 'Using default authentication flow'
@@ -283,6 +317,15 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
         {
             Write-Output $AuthResult.AccessToken
         }   
+
+        if (![string]::IsNullOrEmpty($tokenCacheFile))
+	    {
+		    $bytes = $script:AuthContext.TokenCache.Serialize()
+		
+		    $script:AuthContext.TokenCache.HasStateChanged = $false
+		
+		    [System.IO.File]::WriteAllBytes($tokenCacheFile, $bytes)
+	    }
     } 
 }
 
@@ -2176,7 +2219,9 @@ Function Invoke-PBIRequest{
         [Parameter(Mandatory=$false)] [string] $outFile,
 		[Parameter(Mandatory=$false)] [string] $groupId,
 		[Parameter(Mandatory=$false)] [switch] $ignoreGroup = $false,
-        [Parameter(Mandatory=$false)] [switch] $admin = $false	
+		[Parameter(Mandatory=$false)] [switch] $admin = $false,
+		[Parameter(Mandatory=$false)] [string] $odataParams = $null
+			
 	)
 	  	
     if ([string]::IsNullOrEmpty($authToken))
@@ -2209,7 +2254,12 @@ Function Invoke-PBIRequest{
         $url += "/admin"
     }
         
-    $url += "/$resource"
+	$url += "/$resource"
+	
+	if ($odataParams)
+	{
+		$url += "?$odataParams"	
+	}
     	
     try
     {
