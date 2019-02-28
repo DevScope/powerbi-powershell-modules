@@ -508,14 +508,24 @@ Function New-PBIGroup{
 	[CmdletBinding()][Alias("New-PBIWorkspace")]
 	param(
 		[Parameter(Mandatory=$false)] [string] $authToken,
-		[Parameter(Mandatory=$true)] $name
+		[Parameter(Mandatory=$true)] $name,
+        [Parameter(Mandatory=$false)] [ValidateSet("v1", "v2")] $version = "v1"
+
 	)	
 
 	$body = @{
 		name = $name
 	} | ConvertTo-Json	
 
-	$res = Invoke-PBIRequest -authToken $authToken -method Post -resource "groups" -Body $body -ignoreGroup	
+    $resourceUrl = "groups"
+
+    if ($version -eq "v2")
+    {
+        $resourceUrl += "?workspaceV2=true"
+    }
+    
+
+	$res = Invoke-PBIRequest -authToken $authToken -method Post -resource $resourceUrl -Body $body -ignoreGroup	
 	
 	Write-Output $res
 }
@@ -1175,7 +1185,7 @@ Function Update-PBITableSchema{
 		Update-PBITableSchema -authToken $authToken -dataSetId <dataSetId> -table <tableSchema>		
 
 #>
-	[CmdletBinding()]	
+	[CmdletBinding()][Alias("Update-PBIDataSetTableSchema")]	
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$true)] [string] $dataSetId,				
@@ -1201,7 +1211,7 @@ Function Update-PBITableSchema{
 		
 	Write-Verbose "Updating Table Schema of '$($table.Name)' on DataSet '$dataSetId'"	
 		
-    Invoke-PBIRequest -authToken $authToken -method Put -resource "datasets/$dataSetId/tables/$($table.Name)" -body $jsonBody -groupId $groupId	  			
+    $result = Invoke-PBIRequest -authToken $authToken -method Put -resource "datasets/$dataSetId/tables/$($table.Name)" -body $jsonBody -groupId $groupId	  			
 	
 	Write-Verbose "Table schema updated"
 		
@@ -1930,7 +1940,7 @@ Function Request-PBIDatasetRefresh{
 	Use 'Get-PBIAuthToken' to get the authorization token string
 
 #>
-	[CmdletBinding()][Alias("Update-PBIDataset")]		
+	[CmdletBinding()]		
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$true, ValueFromPipeline = $true)] $dataset,
@@ -2180,7 +2190,7 @@ Function Get-PBIDatasources{
 .SYNOPSIS    
 	Gets DataSet connections	
 #>
-	[CmdletBinding()][Alias("Update-PBIDataset")]		
+	[CmdletBinding()]	
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$true, ValueFromPipeline = $true)] $dataset,

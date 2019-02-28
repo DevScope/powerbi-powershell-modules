@@ -261,6 +261,8 @@ Export-PBIDesktopToCSV -pbiDesktopWindowName "*Van Arsdel*" -outputPath ".\CSVOu
         $pbiDesktopWindowName,
 		[Parameter(Mandatory = $false)]        
 		[string[]] $tables,
+        [Parameter(Mandatory = $false)]        
+		[string] $daxQuery,
 		[Parameter(Mandatory = $true)]    
 		[string] $outputPath		
       )
@@ -290,6 +292,11 @@ Export-PBIDesktopToCSV -pbiDesktopWindowName "*Van Arsdel*" -outputPath ".\CSVOu
     {
         [System.IO.Directory]::CreateDirectory($outputPath) | Out-Null
     }
+
+    if (![string]::IsNullOrEmpty($daxQuery))
+    {
+        $tables = @("CustomQuery")
+    }
 		
 	$tables |% {
     
@@ -300,8 +307,15 @@ Export-PBIDesktopToCSV -pbiDesktopWindowName "*Van Arsdel*" -outputPath ".\CSVOu
 		
 		    Write-Verbose "Moving data from '$daxTableName' into CSV File"
 		
+            $cmd = "EVALUATE('$daxTableName')"
+
+            if (![string]::IsNullOrEmpty($daxQuery))
+            {
+                $cmd = $daxQuery
+            }
+            
 		    $reader = Invoke-SQLCommand -providerName "System.Data.OleDb" -connectionString $ssasConnStr `
-			    -executeType "Reader" -commandText "EVALUATE('$daxTableName')" 
+			    -executeType "Reader" -commandText $cmd 
 		
 		    Write-Verbose "Copying data from into '$tableCsvPath'"
   
