@@ -288,6 +288,16 @@ Export-PBIDesktopToCSV -pbiDesktopWindowName "*Van Arsdel*" -outputPath ".\CSVOu
 		$tables = $modelTables |% {$_.Name}
 	}
 
+    if([System.IO.Path]::HasExtension($outputPath))
+    {
+        $outputFile = [System.IO.Path]::GetFileNameWithoutExtension($outputPath)
+        $outputPath = [System.IO.Path]::GetDirectoryName($outputPath)
+    }
+    else
+    {
+        $outputFile = "DaxQuery"
+    }
+
     if (-not (Test-Path $outputPath))
     {
         [System.IO.Directory]::CreateDirectory($outputPath) | Out-Null
@@ -295,7 +305,7 @@ Export-PBIDesktopToCSV -pbiDesktopWindowName "*Van Arsdel*" -outputPath ".\CSVOu
 
     if (![string]::IsNullOrEmpty($daxQuery))
     {
-        $tables = @("CustomQuery")
+        $tables = @($outputFile)
     }
 		
 	$tables |% {
