@@ -229,6 +229,10 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
 
         Write-Verbose "Process finished"
     }
+    catch
+    {
+        throw $_
+    }
     finally
     {
         if ($server) { $server.Dispose() }
