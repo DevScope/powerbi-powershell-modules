@@ -51,6 +51,22 @@ Get-PBIReport -groupId "WorkspaceId" | Set-PBIReportsDataset -targetDatasetId "D
 
 ```
 
+## Sample Script - Authenticate with Service Principal
+
+```powershell
+
+$tenantId = "MyTenant.onmicrosoft.com"
+$clientId = "App Id"
+$clientSecret = "App Secret"
+
+$authToken = Get-PBIAuthToken -clientId $clientId -clientSecret $clientSecret -tenantId $tenantId
+
+$reports = Get-PBIReport -authToken $authToken -groupId "Workspace Id" -Verbose
+
+$reports
+
+```
+
 ## Sample Script - Monitor a list of computers in Real-Time
 
 ```powershell

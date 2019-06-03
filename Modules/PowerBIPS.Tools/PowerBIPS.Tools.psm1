@@ -60,7 +60,13 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
         ,
         [Parameter(Mandatory = $false)]
         [switch]
-        $removeInternalPBITables
+        $removeInternalPBITables        ,
+        [Parameter(Mandatory = $false)]        
+        $modelFileName = "model.bim"
+        ,
+        [Parameter(Mandatory = $false)]
+        [switch]
+        $onlyModel
 	)
 
     try
@@ -201,9 +207,9 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
 
         New-Item -ItemType Directory -Path $outputPath -ErrorAction SilentlyContinue | Out-Null
        
-        $dbJson | Out-File $outputPath\model.bim -Force
+        $dbJson | Out-File "$outputPath\$modelFileName" -Force
 
-        if (!(Test-Path "$outputPath\ssasproject.smproj"))
+        if (!$onlyModel -and !(Test-Path "$outputPath\ssasproject.smproj"))
         {
             $projectId = (New-Guid).ToString()
 
@@ -220,7 +226,7 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
                         <OutputPath>bin\</OutputPath>                        
                     </PropertyGroup> 
                   <ItemGroup>
-                    <Compile Include=""Model.bim"">
+                    <Compile Include=""$modelFileName"">
                       <SubType>Code</SubType>
                     </Compile>
                   </ItemGroup>

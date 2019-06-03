@@ -216,7 +216,7 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
 
         if (![string]::IsNullOrEmpty($tenantId))
         {
-            $authorityUrl = $authorityUrl.Replace("/common/","/$tenantId/")
+            $authorityUrl = $authorityUrl.Replace("/common","/$tenantId")
         }
 
 		$tokenCache = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.TokenCache
@@ -742,7 +742,7 @@ Function Get-PBIDashboardTile{
 	{		       
 		if ($dashboard -is [string])
 		{			
-			$dashboard = Get-PBIDashboard -authToken $authToken -id $dashboard
+			$dashboard = Get-PBIDashboard -authToken $authToken -id $dashboard -groupId $groupId
 		}		
 
 		$scope = "dashboards/$($dashboard.id)/tiles"
