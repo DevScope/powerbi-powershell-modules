@@ -55,8 +55,18 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
         $outputPath
         ,
         [Parameter(Mandatory = $false)]
+        [int]
+        $compatibilityLevel = 1400
+        ,
+        [Parameter(Mandatory = $false)]
         [switch]
-        $removeInternalPBITables
+        $removeInternalPBITables        ,
+        [Parameter(Mandatory = $false)]        
+        $modelFileName = "model.bim"
+        ,
+        [Parameter(Mandatory = $false)]
+        [switch]
+        $onlyModel
 	)
 
     try
@@ -81,7 +91,8 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
 
             # Get the PBI window port
      
-            $port = Get-PBIDesktopTCPPort $pbiDesktopWindowName
+            $obj = Get-PBIDesktopTCPPort $pbiDesktopWindowName
+            $port = $obj.Port
 
             $dataSource = "localhost:$port"
             
@@ -142,29 +153,34 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
                     {                        
                        foreach($obj in $mExpression) 
                        {
-                            if ($obj.name.Trim() -eq $table.Name.Trim()) 
+                            if ($obj.name.Replace("#","").Replace('"','').Trim() -eq $table.Name.Trim()) 
                             { 
-                                $mExpression = $obj.expression 
-                            }                            
-                            else 
-                            {
-                                $exist = $database.Model.Expressions |? { $_.Name.Trim() -eq $obj.name.Trim() }
-
-                                if ($exist.Count -eq 0 -and -not($obj.name.Trim().Contains("QueryBinding")))
+                                if($table.Name.Contains(' '))
                                 {
-                                    $ex = new-object Microsoft.AnalysisServices.Tabular.NamedExpression
+                                    $mExpression = "let`n`tSource = #`"$($obj.name.Trim())`"`nin Source"
+                                } else {
+                                    $mExpression = "let`n`tSource = $($obj.name)`nin Source"
+                                }
+                            }  
+                                                      
+                            $exist = $database.Model.Expressions | Where-Object { $_.Name.Trim() -eq $obj.name.Trim() }
 
-                                    $ex.Name = $obj.name.Trim()
+                            if ($exist.Count -eq 0 `
+                                    -and -not($obj.name.Trim().Contains("QueryBinding")) `
+                                    )
+                            {
+                                $ex = new-object Microsoft.AnalysisServices.Tabular.NamedExpression
+                                    
+                                $ex.Name = $obj.name.Trim()
 
-                                    $ex.Kind = new-object Microsoft.AnalysisServices.Tabular.ExpressionKind
+                                $ex.Kind = new-object Microsoft.AnalysisServices.Tabular.ExpressionKind
 
-                                    $ex.Description = ""
+                                $ex.Description = ""
 
-                                    $ex.Expression = $obj.expression
+                                $ex.Expression = $obj.expression
 
-                                    $database.Model.Expressions.Add($ex)
-                                } 
-                            }                          
+                                $database.Model.Expressions.Add($ex)
+                            }                         
                         }
                        
                     }                
@@ -181,6 +197,7 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
         
         $database.Model.DataSources.Clear()
 
+        $database.CompatibilityLevel = $compatibilityLevel
         $serializeOptions = new-object Microsoft.AnalysisServices.Tabular.SerializeOptions        
         $serializeOptions.IgnoreTimestamps = $true
         $serializeOptions.IgnoreInferredProperties = $true
@@ -190,9 +207,9 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
 
         New-Item -ItemType Directory -Path $outputPath -ErrorAction SilentlyContinue | Out-Null
        
-        $dbJson | Out-File $outputPath\model.bim -Force
+        $dbJson | Out-File "$outputPath\$modelFileName" -Force
 
-        if (!(Test-Path "$outputPath\ssasproject.smproj"))
+        if (!$onlyModel -and !(Test-Path "$outputPath\ssasproject.smproj"))
         {
             $projectId = (New-Guid).ToString()
 
@@ -209,7 +226,7 @@ Convert-PowerBIDesktopToASTabular -pbiDesktopWindowName "*VanArsdel - Sales*" -o
                         <OutputPath>bin\</OutputPath>                        
                     </PropertyGroup> 
                   <ItemGroup>
-                    <Compile Include=""Model.bim"">
+                    <Compile Include=""$modelFileName"">
                       <SubType>Code</SubType>
                     </Compile>
                   </ItemGroup>
@@ -250,12 +267,15 @@ Export-PBIDesktopToCSV -pbiDesktopWindowName "*Van Arsdel*" -outputPath ".\CSVOu
         $pbiDesktopWindowName,
 		[Parameter(Mandatory = $false)]        
 		[string[]] $tables,
+        [Parameter(Mandatory = $false)]        
+		[string] $daxQuery,
 		[Parameter(Mandatory = $true)]    
 		[string] $outputPath		
       )
         
-    $port = Get-PBIDesktopTCPPort $pbiDesktopWindowName
-	
+    $obj = Get-PBIDesktopTCPPort $pbiDesktopWindowName
+    $port = $obj.Port
+    
 	$dataSource = "localhost:$port"
 	
 	Write-Verbose "Connecting into PBIDesktop TCP port: '$dataSource'"
@@ -274,9 +294,24 @@ Export-PBIDesktopToCSV -pbiDesktopWindowName "*Van Arsdel*" -outputPath ".\CSVOu
 		$tables = $modelTables |% {$_.Name}
 	}
 
+    if([System.IO.Path]::HasExtension($outputPath))
+    {
+        $outputFile = [System.IO.Path]::GetFileNameWithoutExtension($outputPath)
+        $outputPath = [System.IO.Path]::GetDirectoryName($outputPath)
+    }
+    else
+    {
+        $outputFile = "DaxQuery"
+    }
+
     if (-not (Test-Path $outputPath))
     {
         [System.IO.Directory]::CreateDirectory($outputPath) | Out-Null
+    }
+
+    if (![string]::IsNullOrEmpty($daxQuery))
+    {
+        $tables = @($outputFile)
     }
 		
 	$tables |% {
@@ -288,8 +323,15 @@ Export-PBIDesktopToCSV -pbiDesktopWindowName "*Van Arsdel*" -outputPath ".\CSVOu
 		
 		    Write-Verbose "Moving data from '$daxTableName' into CSV File"
 		
+            $cmd = "EVALUATE('$daxTableName')"
+
+            if (![string]::IsNullOrEmpty($daxQuery))
+            {
+                $cmd = $daxQuery
+            }
+            
 		    $reader = Invoke-SQLCommand -providerName "System.Data.OleDb" -connectionString $ssasConnStr `
-			    -executeType "Reader" -commandText "EVALUATE('$daxTableName')" 
+			    -executeType "Reader" -commandText $cmd 
 		
 		    Write-Verbose "Copying data from into '$tableCsvPath'"
   
@@ -399,7 +441,8 @@ param(
  
     #get port and database model
     
-    $port = Get-PBIDesktopTCPPort $pbiDesktopWindowName
+    $obj = Get-PBIDesktopTCPPort $pbiDesktopWindowName
+    $port = $obj.Port
 
     $dataSource = "localhost:$port"
     
@@ -538,8 +581,9 @@ Export-PBIDesktopToSQL -pbiDesktopWindowName "*Van Arsdel*" -sqlConnStr "Data So
         $sqlSchema = "dbo"		
     )
 
-	$port = Get-PBIDesktopTCPPort $pbiDesktopWindowName
-	
+	$obj = Get-PBIDesktopTCPPort $pbiDesktopWindowName
+    $port = $obj.Port
+    
 	$dataSource = "localhost:$port"
 	
 	Write-Verbose "Connecting into PBIDesktop TCP port: '$dataSource'"
@@ -603,7 +647,7 @@ Get-PBIDesktopTCPPort -pbiDesktopWindowName "*VanArsdel - Sales*"
 	[CmdletBinding()]
     param
     (
-        [Parameter(Mandatory = $true)]        
+        [Parameter(Mandatory = $false)]        
 		[string]
         $pbiDesktopWindowName	
     )
@@ -617,7 +661,7 @@ Get-PBIDesktopTCPPort -pbiDesktopWindowName "*VanArsdel - Sales*"
 		throw "No PBIDesktop windows opened"
 	}
 	
-	$matchedWindows = $pbiProcesses |? MainWindowTitle -like $pbiDesktopWindowName
+	$matchedWindows = @($pbiProcesses |? { $_.MainWindowTitle -like $pbiDesktopWindowName -or [string]::IsNullOrEmpty($pbiDesktopWindowName) })
 	
 	if ($matchedWindows.Count -eq 0)
 	{
@@ -625,23 +669,79 @@ Get-PBIDesktopTCPPort -pbiDesktopWindowName "*VanArsdel - Sales*"
 	}
 	
 	# Select the first match
-	
-	$matchedProcess = $matchedWindows[0]
-	$matchedProcessTitle = $matchedProcess.MainWindowTitle
-	
-	Write-Verbose "Processing PBIDesktop file: '$matchedProcessTitle'"
-	
-	$processPorts = $pbiProcessesPorts |? OwningProcess -eq $matchedProcess.Id
-	
-	if ($processPorts.Count -eq 0)
-	{
-		throw "No TCP Port for PBIDesktop process '$matchedProcessTitle"
-	}
-	
-	$port = $processPorts[0].RemotePort
-	
-	$port
+    
+    $matchedWindows |% {
+        
+        $matchedProcess = $_
+
+        $matchedProcessTitle = $matchedProcess.MainWindowTitle
+        
+        Write-Verbose "Processing PBIDesktop file: '$matchedProcessTitle'"
+        
+        $processPorts = $pbiProcessesPorts |? OwningProcess -eq $matchedProcess.Id
+        
+        if ($processPorts.Count -eq 0)
+        {
+            throw "No TCP Port for PBIDesktop process '$matchedProcessTitle"
+        }
+        
+        $port = $processPorts[0].RemotePort
+        
+        Write-Output @{WindowTitle=$matchedProcessTitle; Port = $port}
+    }
 }
+
+Function Export-PBIDesktopODCConnection
+{  
+<#
+.SYNOPSIS
+Exports a PBIDesktop ODC connection file
+.DESCRIPTION
+Exports a PBIDesktop ODC connection file
+.PARAMETER pbiDesktopWindowName
+Power BI Desktop window name, wildcards can be used. Ex: "*name*"
+.PARAMETER path
+ODC file path to be created
+.EXAMPLE
+Export-PBIDesktopODCConnection -pbiDesktopWindowName "*VanArsdel - Sales*"
+#>
+	[CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory = $false)]        
+		[string]
+        $pbiDesktopWindowName,
+        [Parameter(Mandatory = $false)]        
+		[string]
+        $path	
+    )
+    
+    $pbiDesktopWindows = Get-PBIDesktopTCPPort -pbiDesktopWindowName $pbiDesktopWindowName
+
+    if ([string]::IsNullOrEmpty($path))
+    {
+        $path = "."
+    }
+
+    $pbiDesktopWindows |% {
+
+        $obj = $_
+        
+        $port = $obj.Port
+
+        $odcXml = "<html xmlns:o=""urn:schemas-microsoft-com:office:office""xmlns=""http://www.w3.org/TR/REC-html40""><head><meta http-equiv=Content-Type content=""text/x-ms-odc; charset=utf-8""><meta name=ProgId content=ODC.Cube><meta name=SourceType content=OLEDB><meta name=Catalog content=164af183-2454-4f45-964a-c200f51bcd59><meta name=Table content=Model><title>PBIDesktop Model</title><xml id=docprops><o:DocumentProperties  xmlns:o=""urn:schemas-microsoft-com:office:office""  xmlns=""http://www.w3.org/TR/REC-html40"">  <o:Name>PBIDesktop Model</o:Name> </o:DocumentProperties></xml><xml id=msodc><odc:OfficeDataConnection  xmlns:odc=""urn:schemas-microsoft-com:office:odc""  xmlns=""http://www.w3.org/TR/REC-html40"">  <odc:Connection odc:Type=""OLEDB"">   
+        <odc:ConnectionString>Provider=MSOLAP;Integrated Security=ClaimsToken;Data Source=localhost:$port;MDX Compatibility= 1; MDX Missing Member Mode= Error; Safety Options= 2; Update Isolation Level= 2; Locale Identifier= 1033</odc:ConnectionString>   
+        <odc:CommandType>Cube</odc:CommandType>   <odc:CommandText>Model</odc:CommandText>  </odc:Connection> </odc:OfficeDataConnection></xml></head></html>"   
+                
+        Write-Verbose "Exporting ODC for window '$($obj.WindowTitle)'"
+        
+        $odcFile = "$path\$($obj.WindowTitle).odc"
+
+        $odcXml | Out-File $odcFile -Force	
+
+    }    
+}
+
 
 #region Private
 
@@ -743,23 +843,49 @@ Function Get-CleanMCode{
 
        # lets create expressions for each shared
       
-       $ex = $mcode.Split(';')
+       #$ex = $mcode.Split(';')
+       $ex = $mcode -split "shared "
 
-        For ($i=1; $i -lt $ex.Count-1; $i++) {
+        For ($i=1; $i -le $ex.Count-1; $i++) {
 
-            $ex[$i] = $ex[$i].Trim()
+            if(-Not ($ex[$i].Contains("IsParameterQuery")))
+            {
+                $ex[$i] = $ex[$i].Trim()
 
-            $ex[$i] = $ex[$i].Remove(0,6)
+                $tam = $ex[$i].indexOf('=') + 1
 
-            $tam = $ex[$i].indexOf('=') + 1
+                #Remove extra auto code coming from PowerBI
+                $t = ($ex[$i].Substring($tam,$ex[$i].Length-$tam)) -split "AutoRemovedColumns1"
 
-            $M = New-Object PSObject -Property @{
-                 hiddenTable = $true
-                 expression = $ex[$i].Substring($tam,$ex[$i].Length-$tam)
-                 name = $ex[$i].Split('=')[0]
-             } 
+                $dd = $t[0].Trim().Split([Environment]::NewLine)
+                
+                #Remove last comma
+                $t[0] = $t[0].Trim();
+                $t[0] = $t[0].Substring(0, ($t[0].Length)-1)
 
-            $colletion += $M
+                #Get last identifier
+                $lastId = $dd[-1].Split('=')
+
+                #Fix the ending
+                if(-Not ($t[0] -match '[\s.*]in[\s.*](?=([^"\\]*(\\.|"([^"\\]*\\.)*[^"\\]*"))*[^"]*$)'))
+                { 
+                    $t[0] += [Environment]::NewLine + " in " + $lastId[0].Trim()
+                }
+
+                $M = New-Object PSObject -Property @{
+                    hiddenTable = $true
+                    expression = $t[0]
+                    name = $ex[$i].Split('=')[0].Replace('#"','').Replace('"','')
+                } 
+
+                $colletion += $M
+            } else { # parameter expressions
+                $colletion += New-Object PSObject -Property @{
+                    hiddenTable = $true
+                    expression = $ex[$i].Split('=',2)[1].Replace(";","").Replace("`r","").Replace("`n","").Trim()
+                    name = $ex[$i].Split('=')[0].Replace('#"','').Replace('"','')
+                }
+            }
          }
     }
 

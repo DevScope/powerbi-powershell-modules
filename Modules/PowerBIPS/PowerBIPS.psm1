@@ -32,7 +32,7 @@ THE SOFTWARE.
 
 #region Constants/Variables
 
-$script:pbiAuthorityUrl = "https://login.microsoftonline.com/common/oauth2/authorize"
+$script:pbiAuthorityUrl = "https://login.microsoftonline.com/common"
 $script:pbiResourceUrl = "https://analysis.windows.net/powerbi/api"
 $script:pbiDefaultAuthRedirectUri = "https://login.live.com/oauth20_desktop.srf"
 $script:pbiDefaultClientId = "053e0da1-7eb4-4b9a-aa07-6f41d0f35cef"
@@ -201,7 +201,11 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
         $clientSecret,
         [Parameter(Mandatory=$false)]
         [switch]
-		$returnADALObj = $false
+		$returnADALObj = $false,
+		[switch]
+		$deviceCodeFlow = $false,
+		[string]
+		$tokenCacheFile
 	)
 
     if ($Script:AuthContext -eq $null)
@@ -212,10 +216,19 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
 
         if (![string]::IsNullOrEmpty($tenantId))
         {
-            $authorityUrl = $authorityUrl.Replace("/common/","/$tenantId/")
+            $authorityUrl = $authorityUrl.Replace("/common","/$tenantId")
         }
 
-        $script:AuthContext = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext -ArgumentList ($authorityUrl)
+		$tokenCache = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.TokenCache
+
+		if (![string]::IsNullOrEmpty($tokenCacheFile) -and (Test-Path $tokenCacheFile))
+		{
+			$bytes = [System.IO.File]::ReadAllBytes($tokenCacheFile)
+
+			$tokenCache = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.TokenCache(,$bytes)
+		}
+		
+        $script:AuthContext = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext -ArgumentList ($authorityUrl, $tokenCache)    
     }
 
 	if ([string]::IsNullOrEmpty($clientId))
@@ -248,7 +261,28 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
         $AuthResult = $script:AuthContext.AcquireTokenAsync(
           $script:pbiResourceUrl
         , $clientCredential).Result
-    }
+	}
+	elseif($deviceCodeFlow)
+	{
+		# if there's a token in cache reuse
+
+		if ($script:AuthContext.TokenCache.Count -gt 0)
+		{
+			$AuthResult = $script:AuthContext.AcquireTokenSilentAsync($script:pbiResourceUrl, $clientId).Result
+		}
+		else
+		{
+			$deviceCode = $script:AuthContext.AcquireDeviceCodeAsync($script:pbiResourceUrl, $clientId).Result
+
+			Write-Host "Go to '$($deviceCode.VerificationUrl)' and enter device code: '$($deviceCode.UserCode)'"
+			
+			$task = $script:AuthContext.AcquireTokenByDeviceCodeAsync($deviceCode)
+			
+			$task.Wait()
+
+			$AuthResult = $task.Result
+		}
+	}
     else
     {
 		Write-Verbose -Message 'Using default authentication flow'
@@ -283,6 +317,15 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
         {
             Write-Output $AuthResult.AccessToken
         }   
+
+        if (![string]::IsNullOrEmpty($tokenCacheFile))
+	    {
+		    $bytes = $script:AuthContext.TokenCache.Serialize()
+		
+		    $script:AuthContext.TokenCache.HasStateChanged = $false
+		
+		    [System.IO.File]::WriteAllBytes($tokenCacheFile, $bytes)
+	    }
     } 
 }
 
@@ -465,14 +508,24 @@ Function New-PBIGroup{
 	[CmdletBinding()][Alias("New-PBIWorkspace")]
 	param(
 		[Parameter(Mandatory=$false)] [string] $authToken,
-		[Parameter(Mandatory=$true)] $name
+		[Parameter(Mandatory=$true)] $name,
+        [Parameter(Mandatory=$false)] [ValidateSet("v1", "v2")] $version = "v1"
+
 	)	
 
 	$body = @{
 		name = $name
 	} | ConvertTo-Json	
 
-	$res = Invoke-PBIRequest -authToken $authToken -method Post -resource "groups" -Body $body -ignoreGroup	
+    $resourceUrl = "groups"
+
+    if ($version -eq "v2")
+    {
+        $resourceUrl += "?workspaceV2=true"
+    }
+    
+
+	$res = Invoke-PBIRequest -authToken $authToken -method Post -resource $resourceUrl -Body $body -ignoreGroup	
 	
 	Write-Output $res
 }
@@ -689,7 +742,7 @@ Function Get-PBIDashboardTile{
 	{		       
 		if ($dashboard -is [string])
 		{			
-			$dashboard = Get-PBIDashboard -authToken $authToken -id $dashboard
+			$dashboard = Get-PBIDashboard -authToken $authToken -id $dashboard -groupId $groupId
 		}		
 
 		$scope = "dashboards/$($dashboard.id)/tiles"
@@ -1132,7 +1185,7 @@ Function Update-PBITableSchema{
 		Update-PBITableSchema -authToken $authToken -dataSetId <dataSetId> -table <tableSchema>		
 
 #>
-	[CmdletBinding()]	
+	[CmdletBinding()][Alias("Update-PBIDataSetTableSchema")]	
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$true)] [string] $dataSetId,				
@@ -1158,7 +1211,7 @@ Function Update-PBITableSchema{
 		
 	Write-Verbose "Updating Table Schema of '$($table.Name)' on DataSet '$dataSetId'"	
 		
-    Invoke-PBIRequest -authToken $authToken -method Put -resource "datasets/$dataSetId/tables/$($table.Name)" -body $jsonBody -groupId $groupId	  			
+    $result = Invoke-PBIRequest -authToken $authToken -method Put -resource "datasets/$dataSetId/tables/$($table.Name)" -body $jsonBody -groupId $groupId	  			
 	
 	Write-Verbose "Table schema updated"
 		
@@ -1616,7 +1669,7 @@ Function Import-PBIFile{
 		[Parameter(Mandatory=$true, ValueFromPipeline = $true)] $file,
 		[Parameter(Mandatory=$false)] [string] $dataSetName,
 		[Parameter(Mandatory=$false)]
-		[ValidateSet("Abort","Overwrite","Ignore")]
+		[ValidateSet("Abort","Overwrite","Ignore","CreateOrOverwrite")]
 		[string]$nameConflict = "Ignore",
 		[Parameter(Mandatory=$false)] [string] $groupId
 	)
@@ -1887,7 +1940,7 @@ Function Request-PBIDatasetRefresh{
 	Use 'Get-PBIAuthToken' to get the authorization token string
 
 #>
-	[CmdletBinding()][Alias("Update-PBIDataset")]		
+	[CmdletBinding()]		
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$true, ValueFromPipeline = $true)] $dataset,
@@ -1899,7 +1952,7 @@ Function Request-PBIDatasetRefresh{
 	{		          
 		if ($dataset -is [string])
 		{			
-			$dataset = Get-PBIDataSet -authToken $authToken -id $dataset
+			$dataset = Get-PBIDataSet -authToken $authToken -id $dataset -groupId $groupId
 		}	
 
 		Invoke-PBIRequest -authToken $authToken -method Post -resource "datasets/$($dataset.id)/refreshes" -groupId $dataset.groupId
@@ -2137,7 +2190,7 @@ Function Get-PBIDatasources{
 .SYNOPSIS    
 	Gets DataSet connections	
 #>
-	[CmdletBinding()][Alias("Update-PBIDataset")]		
+	[CmdletBinding()]	
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$true, ValueFromPipeline = $true)] $dataset,
@@ -2168,7 +2221,7 @@ Function Invoke-PBIRequest{
 	param(									
 		[Parameter(Mandatory=$false)] [string] $authToken,
 		[Parameter(Mandatory=$true)] [string] $resource,
-        [Parameter(Mandatory=$false)] [ValidateSet('Get','Post','Delete', 'Put')] [string] $method = "Get",
+        [Parameter(Mandatory=$false)] [ValidateSet('Get','Post','Delete', 'Put', 'Patch')] [string] $method = "Get",
         [Parameter(Mandatory=$false)] $body,        
         [Parameter(Mandatory=$false)] [ValidateSet('Individual','Admin')] [string] $scope = "Individual",
         [Parameter(Mandatory=$false)] [string] $contentType = "application/json",
@@ -2176,7 +2229,9 @@ Function Invoke-PBIRequest{
         [Parameter(Mandatory=$false)] [string] $outFile,
 		[Parameter(Mandatory=$false)] [string] $groupId,
 		[Parameter(Mandatory=$false)] [switch] $ignoreGroup = $false,
-        [Parameter(Mandatory=$false)] [switch] $admin = $false	
+		[Parameter(Mandatory=$false)] [switch] $admin = $false,
+		[Parameter(Mandatory=$false)] [string] $odataParams = $null
+			
 	)
 	  	
     if ([string]::IsNullOrEmpty($authToken))
@@ -2209,7 +2264,12 @@ Function Invoke-PBIRequest{
         $url += "/admin"
     }
         
-    $url += "/$resource"
+	$url += "/$resource"
+	
+	if ($odataParams)
+	{
+		$url += "?$odataParams"	
+	}
     	
     try
     {
@@ -2565,3 +2625,4 @@ function ParseErrorForResponseBody($Error) {
 }
 
 #endregion
+

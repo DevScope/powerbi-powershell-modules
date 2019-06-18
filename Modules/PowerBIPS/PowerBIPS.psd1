@@ -4,7 +4,7 @@
 RootModule = 'PowerBIPS.psm1'
 
 # Version number of this module.
-ModuleVersion = '2.0.1.6'
+ModuleVersion = '2.0.3.1'
 
 # ID used to uniquely identify this module
 GUID = '163A1640-A4F2-4B1F-A3AF-2796AD56200B'
@@ -22,7 +22,7 @@ Copyright = '(c) 2015 DevScope. All rights reserved.'
 Description = 'A lightweight powershell module with cmdlets to interact with PowerBI developer APIs'
 
 # Minimum version of the Windows PowerShell engine required by this module
-# PowerShellVersion = ''
+PowerShellVersion = '3.0'
 
 # Name of the Windows PowerShell host required by this module
 # PowerShellHostName = ''
@@ -43,9 +43,7 @@ Description = 'A lightweight powershell module with cmdlets to interact with Pow
 # RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
- RequiredAssemblies = @(".\Microsoft.IdentityModel.Clients.ActiveDirectory.dll"
- , ".\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll"
- )
+ RequiredAssemblies = @(".\Microsoft.IdentityModel.Clients.ActiveDirectory.dll")
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 # ScriptsToProcess = @()
@@ -89,8 +87,7 @@ AliasesToExport = '*'
 #ModuleList = @(".\PowerBIPS.psm1", ".\PowerBIPS.Tools.psm1")
 
 # List of all files packaged with this module
-FileList = @("Microsoft.IdentityModel.Clients.ActiveDirectory.dll"
-, "Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll")
+FileList = @("Microsoft.IdentityModel.Clients.ActiveDirectory.dll")
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{

@@ -13,7 +13,7 @@ Returns the Power BI Desktop Analysis Services Instance TCP Port
 ## SYNTAX
 
 ```
-Get-PBIDesktopTCPPort [-pbiDesktopWindowName] <String> [<CommonParameters>]
+Get-PBIDesktopTCPPort [[-pbiDesktopWindowName] <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -37,7 +37,7 @@ Type: String
 Parameter Sets: (All)
 Aliases:
 
-Required: True
+Required: False
 Position: 1
 Default value: None
 Accept pipeline input: False

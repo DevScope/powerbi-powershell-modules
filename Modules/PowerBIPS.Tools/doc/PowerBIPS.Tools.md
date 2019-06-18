@@ -14,6 +14,9 @@ Locale: en-US
 ### [Convert-PowerBIDesktopToASTabular](Convert-PowerBIDesktopToASTabular.md)
 {{Manually Enter Convert-PowerBIDesktopToASTabular Description Here}}
 
+### [Export-PBIDesktopODCConnection](Export-PBIDesktopODCConnection.md)
+{{Manually Enter Export-PBIDesktopODCConnection Description Here}}
+
 ### [Export-PBIDesktopToCSV](Export-PBIDesktopToCSV.md)
 {{Manually Enter Export-PBIDesktopToCSV Description Here}}
 
