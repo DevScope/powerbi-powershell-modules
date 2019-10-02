@@ -578,7 +578,10 @@ Export-PBIDesktopToSQL -pbiDesktopWindowName "*Van Arsdel*" -sqlConnStr "Data So
         $sqlConnStr,
 		[Parameter(Mandatory = $false)]        
 		[string]
-        $sqlSchema = "dbo"		
+        $sqlSchema = "dbo",
+        [Parameter(Mandatory = $false)]        
+		[hashtable]
+        $forceDataTypes				
     )
 
 	$obj = Get-PBIDesktopTCPPort $pbiDesktopWindowName
@@ -616,7 +619,7 @@ Export-PBIDesktopToSQL -pbiDesktopWindowName "*Van Arsdel*" -sqlConnStr "Data So
 		    $reader = Invoke-SQLCommand -providerName "System.Data.OleDb" -connectionString $ssasConnStr `
 			    -executeType "Reader" -commandText "EVALUATE('$daxTableName')" 
 		
-		    $rowCount = Invoke-SQLBulkCopy -connectionString $sqlConnStr -tableName $sqlTableName -data @{reader=$reader} -Verbose
+		    $rowCount = Invoke-SQLBulkCopy -connectionString $sqlConnStr -tableName $sqlTableName -data @{reader=$reader} -forceDataTypes $forceDataTypes -Verbose
 		
 		    Write-Verbose "Inserted $rowCount rows"
         

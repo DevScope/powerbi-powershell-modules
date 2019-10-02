@@ -330,7 +330,8 @@ Function Invoke-SQLBulkCopy{
 		[Parameter(Mandatory=$true)] [string] $tableName,
 		[Parameter(Mandatory=$false)] [hashtable]$columnMappings = $null,
 		[Parameter(Mandatory=$false)] [int]$batchSize = 1000,
-		[switch] $ensureTableExists = $true
+		[switch] $ensureTableExists = $true,
+        [Parameter(Mandatory=$false)] [hashtable] $forceDataTypes
 	)
 	
 	try
@@ -425,7 +426,7 @@ Function Invoke-SQLBulkCopy{
 					$dataForNewTable = @{reader=$dataForNewTable}
 				}
 				
-				New-SQLTable -connection $connection -data $dataForNewTable -tableName $tableName -force			
+				New-SQLTable -connection $connection -data $dataForNewTable -tableName $tableName -forceDataTypes $forceDataTypes -force			
 			}
 		}		
 		
@@ -476,6 +477,7 @@ function New-SQLTable{
 		[Parameter(Mandatory=$true)] [string] $tableName,
 		[Parameter(Mandatory=$false)] [string] $customColumns,
 		[Parameter(Mandatory=$false)] [string] $identityColumnName,
+        [Parameter(Mandatory=$false)] [hashtable] $forceDataTypes,
 		[Switch] $force
 		)
 			 										
@@ -486,7 +488,7 @@ function New-SQLTable{
 		#https://msdn.microsoft.com/en-us/library/cc716729%28v=vs.110%29.aspx
 	    foreach($obj in $data.Columns)
 	    {
-			$sqlType = Convert-DotNetTypeToSQLType $obj.DataType.ToString()
+			$sqlType = Convert-DotNetTypeToSQLType $obj.DataType.ToString() -forceDataTypes $forceDataTypes
 			
 			$strcolumns = $strcolumns +",[$obj] $sqlType NULL" + [System.Environment]::NewLine
 	    }
@@ -512,7 +514,7 @@ function New-SQLTable{
 						$colName = $regEx.Groups[1].Value
 					}
 					
-					$sqlType = Convert-DotNetTypeToSQLType $col.DataType.ToString() $col.ColumnSize $col.NumericPrecision $col.NumericScale $col.DataTypeName
+					$sqlType = Convert-DotNetTypeToSQLType $col.DataType.ToString() $col.ColumnSize $col.NumericPrecision $col.NumericScale $col.DataTypeName -forceDataTypes $forceDataTypes
 					
 					$strcolumns = $strcolumns +",[$colName] $sqlType NULL" + [System.Environment]::NewLine
 			    }
@@ -640,83 +642,89 @@ function Test-SQLObjectExists{
 #endregion
 
 #region Private Methods
-
-function Convert-DotNetTypeToSQLType ($typeStr, $size, $numericPrecision, $numericScale, $dataTypeName){
+function Convert-DotNetTypeToSQLType ($typeStr, $size, $numericPrecision, $numericScale, $dataTypeName, $forceDataTypes){
 	
-	switch ($typeStr)
-	{
-		"System.Double" {
-			return "float"
-		}
-		"System.Boolean" {
-			return "bit"
-		}
-		"System.String"{
+    if ($forceDataTypes -and $forceDataTypes.ContainsKey($typeStr))
+    {
+        return $forceDataTypes[$typeStr];
+    }
+    else
+    {
+	    switch ($typeStr)
+	    {
+		    "System.Double" {
+			    return "float"
+		    }
+		    "System.Boolean" {
+			    return "bit"
+		    }
+		    "System.String"{
 			
-			if ([string]::IsNullOrEmpty($dataTypeName))
-			{
-				$dataTypeName = "nvarchar"				
-			}
+			    if ([string]::IsNullOrEmpty($dataTypeName))
+			    {
+				    $dataTypeName = "nvarchar"				
+			    }
 			
-			if ($size -eq $null -or ($dataTypeName -eq "varchar" -and $size -ge 8000) -or ($dataTypeName -eq "nvarchar" -and $size -ge 4000))
-			{
-				$size = "MAX"
-			}
+			    if ($size -eq $null -or $size -le 0 -or ($dataTypeName -eq "varchar" -and $size -ge 8000) -or ($dataTypeName -eq "nvarchar" -and $size -ge 4000))
+			    {
+				    $size = "MAX"
+			    }
 			
-			return "$dataTypeName($size)"	
+			    return "$dataTypeName($size)"	
 			
-		}
-		"System.Decimal"{
-			# Scale zero default to int
-			if ($numericScale -eq 0)
-			{
-				if ($numericPrecision -lt 10)				
-				{
-					return "int"
-				}
-				else
-				{
-					return "bigint"
-				}
-			}
+		    }
+		    "System.Decimal"{
+			    # Scale zero default to int
+			    if ($numericScale -eq 0)
+			    {
+				    if ($numericPrecision -lt 10)				
+				    {
+					    return "int"
+				    }
+				    else
+				    {
+					    return "bigint"
+				    }
+			    }
 			
-			if ($dataTypeName -like "*money")
-			{
-				return $dataTypeName
-			}
+			    if ($dataTypeName -like "*money")
+			    {
+				    return $dataTypeName
+			    }
 			
-			if ($numericScale -ne $null -and $numericScale -ne 255)
-			{
-				return "decimal($numericPrecision, $numericScale)"
-			}
+			    if ($numericScale -ne $null -and $numericScale -ne 255)
+			    {
+				    return "decimal($numericPrecision, $numericScale)"
+			    }
 			
-			return "decimal(38,4)"
-		}
-		"System.Byte"{
-			return "tinyint"
-		}
-		"System.Int16"{
-			return "smallint"
-		}
-		"System.Int32"{
-			return "int"
-		}	
-		"System.Int64"{
-			return "bigint"
-		}
-		"System.DateTime"{
-			return "datetime2(0)"
-		}
-		"System.Byte[]"{
-			return "varbinary(max)"
-		}
-		"System.Xml.XmlDocument"{
-			return "xml"
-		}
-		default{
-			return "nvarchar(MAX)"
-		}
-	}	
+			    return "decimal(38,4)"
+		    }
+		    "System.Byte"{
+			    return "tinyint"
+		    }
+		    "System.Int16"{
+			    return "smallint"
+		    }
+		    "System.Int32"{
+			    return "int"
+		    }	
+		    "System.Int64"{
+			    return "bigint"
+		    }
+		    "System.DateTime"{
+			    return "datetime2(0)"
+		    }
+		    "System.Byte[]"{
+			    return "varbinary(max)"
+		    }
+		    "System.Xml.XmlDocument"{
+			    return "xml"
+		    }
+		    default{
+			    return "nvarchar(MAX)"
+		    }
+	    }	
+    }
 }
 
 
