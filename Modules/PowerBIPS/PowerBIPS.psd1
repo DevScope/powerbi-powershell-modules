@@ -72,6 +72,8 @@ FunctionsToExport = @(
     , "Get-PBIDatasources", "Invoke-PBIRequest", "Get-PBIModuleConfig", "Set-PBIModuleConfig"    
     , "Set-PBIReportContent", "Get-PBIAuthTokenHttp", "Remove-PBIDataSet"
     , "Remove-PBIReport"
+    , "Get-PBICapacities", "Set-PBICapacity", "Clear-PBICapacity","Get-PBICapacityAssignmentStatus"
+    , "Get-PBICapacityWorkloads", "Set-PBICapacityWorkload"
 )
 
 # Cmdlets to export from this module

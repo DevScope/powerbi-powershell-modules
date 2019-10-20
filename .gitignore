@@ -20,4 +20,4 @@ Modules/PowerBIETL/PublishToGallery.ps1
 
 /.vs/slnx.sqlite
 /.vs
-ImportPBIStuff.ps1
+Test*.ps1
