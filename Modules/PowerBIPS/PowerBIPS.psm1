@@ -2211,6 +2211,271 @@ Function Get-PBIDatasources{
 	} 		
 }
 
+#region Capacities
+
+Function Get-PBICapacities{
+<#
+.SYNOPSIS    
+	Gets an array of avaliable capacities the user has access to
+.DESCRIPTION
+	Gets an array of avaliable capacities the user has access to
+.PARAMETER AuthToken
+    The authorization token required to communicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.EXAMPLE	
+	Get-PBICapacities -authToken $authtoken
+#>
+		[CmdletBinding()]		
+		param(									
+			[Parameter(Mandatory=$false)] [string] $authToken
+		)
+					
+		Write-Verbose "Getting Capacities"
+
+		$resource = "capacities"
+
+		$capacities = @(Invoke-PBIRequest -authToken $authToken -method Get -resource $resource -ignoreGroup)
+						
+		Write-Verbose "Found $($capacities.count) capacities."
+	
+		Write-Output $capacities
+}
+
+Function Set-PBICapacity{
+<#
+.SYNOPSIS    
+	Assigns the specified workspace to the specified capacity
+.DESCRIPTION
+	Assigns the specified workspace to the specified capacity.
+	Note: To perform this operation, the user must be admin on the specified workspace and have admin or assign permissions on the capacity.
+.PARAMETER AuthToken
+    The authorization token required to communicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.PARAMETER Capacity
+	The Capacity object or the capacity ID (GUID)
+.PARAMETER GroupId
+	Id (GUID) of the workspace to which the capacity will be assigned
+.EXAMPLE
+	Set-PBICapacity -authToken $authtoken -capacity {your_capacity}
+#>
+		[CmdletBinding()]		
+		param(									
+			[Parameter(Mandatory=$false)] [string] $authToken,
+		    [Parameter(Mandatory=$true, ValueFromPipeline = $true)] $capacity,
+		    [Parameter(Mandatory=$false)] [string] $groupId
+		)
+	    begin {}
+	    process
+        {
+            $capacityId = ""
+        	if ($capacity -is [string])
+            {
+                $capacityId = $capacity
+            }
+            else
+            {
+                $capacityId = $capacity.id
+			}
+			
+			Write-Verbose "Assigning Capacity"
+
+		    $resource = "AssignToCapacity"
+
+            $bodyObj = @{capacityId=$capacityId}
+
+		    $capacities = @(Invoke-PBIRequest -authToken $authToken -method Post -resource $resource -Body ($bodyObj | ConvertTo-Json) -groupId $groupId)
+						
+		    Write-Verbose "Assigned Capacity $($capacity.displayName) $($capacity.id)."
+	
+		    Write-Output $capacities
+        }
+}
+
+Function Clear-PBICapacity{
+<#
+.SYNOPSIS    
+	Unassign currently assigned capacity
+.DESCRIPTION
+	Unassign currently assigned capacity
+.PARAMETER AuthToken
+    The authorization token required to communicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.PARAMETER GroupId
+	Id (GUID) of the workspace to which the capacity will be unassigned
+.EXAMPLE	
+	Clear-PBICapacity -authToken $authtoken
+#>
+		[CmdletBinding()]		
+		param(									
+			[Parameter(Mandatory=$false)] [string] $authToken,
+		    [Parameter(Mandatory=$false)] [string] $groupId
+		)
+	    begin {}
+	    process
+        {
+			Write-Verbose "Unassigning Capacity"
+
+			$capacityId = "00000000-0000-0000-0000-000000000000"
+			
+		    $resource = "AssignToCapacity"
+
+            $bodyObj = @{capacityId=$capacityId}
+
+		    $capacities = @(Invoke-PBIRequest -authToken $authToken -method Post -resource $resource -Body ($bodyObj | ConvertTo-Json) -groupId $groupId)
+						
+		    Write-Verbose "Unassigned Capacity."
+	
+		    Write-Output $capacities
+        }
+}
+
+Function Get-PBICapacityAssignmentStatus{
+<#
+.SYNOPSIS    
+	Gets the status of the assignment to capacity operation of the specified workspace
+.DESCRIPTION
+	Gets the status of the assignment to capacity operation of the specified workspace.
+	Note: To perform this operation, the user must be admin on the specified workspace.
+.PARAMETER AuthToken
+	The authorization token required to communicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.PARAMETER GroupId
+	Id (GUID) of the workspace to which the capacity will be unassigned
+.EXAMPLE
+	Get-PBICapacityAssignmentStatus -authToken $authtoken
+#>
+	[CmdletBinding()]
+	param(		
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$false)] [string] $groupId
+	)
+
+	Write-Verbose "Getting Capacity Assignment Status"
+
+	$resource = "CapacityAssignmentStatus"
+
+	$capacityStatus = @(Invoke-PBIRequest -authToken $authToken -method Get -resource $resource)
+
+	Write-Output $capacityStatus
+}
+
+Function Get-PBICapacityWorkloads{
+<#
+.SYNOPSIS    
+	Returns the current state of the specified capacity workloads. 
+.DESCRIPTION
+	Returns the current state of the specified capacity workloads. 
+	If a workload is enabled also returns the maximum memory percentage that the workload can consume.
+.PARAMETER AuthToken
+	The authorization token required to communicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.PARAMETER Capacity
+	The Capacity object or the capacity ID (GUID)
+.PARAMETER WorkloadName
+	The workload name
+.EXAMPLE 
+	Get-PBICapacityWorkloads -authToken $authtoken -capacity $capacity
+#>
+		[CmdletBinding()]
+		param(									
+			[Parameter(Mandatory=$false)] [string] $authToken,
+			[Parameter(Mandatory=$true, ValueFromPipeline = $true)] $capacity,
+			[Parameter(Mandatory=$false)] [string] $workloadName
+		)
+
+		$capacityId = ""
+		if ($capacity -is [string])
+		{
+			$capacityId = $capacity
+		}
+		else
+		{
+			$capacityId = $capacity.id
+		}
+		
+		Write-Verbose "Getting Capacity Workloads"
+
+		$resource = "capacities/$capacityId/Workloads"
+
+		if (![string]::IsNullOrEmpty($workloadName))
+		{
+			$resource += "/$workloadName"
+		}
+
+		$workloads = @(Invoke-PBIRequest -authToken $authToken -method Get -resource $resource -ignoreGroup)
+
+		Write-Verbose "Found $($workloads.count) workloads."
+	
+		Write-Output $workloads
+}
+
+Function Set-PBICapacityWorkload{
+<#
+.SYNOPSIS    
+	Changes the state and/or maximum memory percentage of the specified workload 
+.DESCRIPTION
+	Changes the state of a specific workload to Enabled or Disabled. 
+	When enabling a workload the maximum memory percentage that the workload can consume must be set.
+.PARAMETER AuthToken
+	The authorization token required to communicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.PARAMETER Capacity
+	The Capacity object or the capacity ID (GUID)
+.PARAMETER WorkloadName
+	The workload name
+.PARAMETER Disable
+	By default, the cmdlet will Enable the workload. Use -disable to Disable it.
+.PARAMETER maxMemoryPercentageSetByUser
+	The memory percentage maximum limit set by the user. Mandatory if you are gonna Enable the workload.
+.EXAMPLE
+	Set-PBICapacityWorkload -authToken $authtoken -capacity $capacity -workloadName "Dataflows" -maxMemoryPercentageSetByUser 20
+.EXAMPLE
+	Set-PBICapacityWorkload -authToken $authtoken -capacity $capacity -workloadName "Dataflows" -disable
+#>
+	[CmdletBinding()]		
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$true, ValueFromPipeline = $true)] $capacity,
+		[Parameter(Mandatory=$true)] [string] $workloadName,
+		[Parameter(Mandatory=$false)] [switch] $disable,
+		[Parameter(Mandatory=$false)] [int] $maxMemoryPercentageSetByUser,
+		[Parameter(Mandatory=$false)] [string] $groupId
+	)
+	begin {}
+	process
+	{
+		$capacityId = ""
+		if ($capacity -is [string])
+		{
+			$capacityId = $capacity
+		}
+		else
+		{
+			$capacityId = $capacity.id
+		}
+
+		if ($disable){
+			$bodyObj = @{
+				state = "Disabled"
+			}
+		}
+		else {
+			$bodyObj = @{
+				state = "Enabled"
+				maxMemoryPercentageSetByUser = "$maxMemoryPercentageSetByUser"
+			}
+		}
+
+		$resource = "capacities/$capacityId/Workloads/$workloadName"
+
+		Invoke-PBIRequest -authToken $authToken -method Patch -resource $resource -Body ($bodyObj | ConvertTo-Json) -ignoreGroup
+						
+		Write-Verbose "$workloadName Workload changed"
+	}
+}
+
+#endregion
+
 Function Invoke-PBIRequest{
 <#
 .SYNOPSIS    
