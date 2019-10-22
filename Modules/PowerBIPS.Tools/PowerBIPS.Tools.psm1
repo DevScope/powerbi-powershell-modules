@@ -572,7 +572,9 @@ Export-PBIDesktopToSQL -pbiDesktopWindowName "*Van Arsdel*" -sqlConnStr "Data So
 		[string]
         $pbiDesktopWindowName,
 		[Parameter(Mandatory = $false)]        
-		[string[]] $tables,
+		[string[]] $tables,        
+		[Parameter(Mandatory = $false)]        
+		[string[]] $destinationTables,
 		[Parameter(Mandatory = $true)]        
 		[string]
         $sqlConnStr,
@@ -605,21 +607,28 @@ Export-PBIDesktopToSQL -pbiDesktopWindowName "*Van Arsdel*" -sqlConnStr "Data So
 		$tables = $modelTables |% {$_.Name}
 	}
 		
+    $i = 0
+
 	$tables |% {
     
         try
         {
 
-		    $daxTableName = $_				
+		    $daxTableName = $sqlTableName = $_				
+
+            if ($destinationTables -and $destinationTables.Count -gt 0)
+            {
+                $sqlTableName = $destinationTables[$i]
+            }
 		
-		    $sqlTableName = "[$sqlSchema].[$daxTableName]"
+		    $sqlTableNameWithSchema = "[$sqlSchema].[$sqlTableName]"
 		
-		    Write-Verbose "Moving data from '$daxTableName' into '$sqlTableName'"
+		    Write-Verbose "Moving data from '$daxTableName' into '$sqlTableNameWithSchema'"
 		
 		    $reader = Invoke-SQLCommand -providerName "System.Data.OleDb" -connectionString $ssasConnStr `
 			    -executeType "Reader" -commandText "EVALUATE('$daxTableName')" 
 		
-		    $rowCount = Invoke-SQLBulkCopy -connectionString $sqlConnStr -tableName $sqlTableName -data @{reader=$reader} -forceDataTypes $forceDataTypes -Verbose
+		    $rowCount = Invoke-SQLBulkCopy -connectionString $sqlConnStr -tableName $sqlTableNameWithSchema -data @{reader=$reader} -forceDataTypes $forceDataTypes -Verbose
 		
 		    Write-Verbose "Inserted $rowCount rows"
         
@@ -630,6 +639,8 @@ Export-PBIDesktopToSQL -pbiDesktopWindowName "*Van Arsdel*" -sqlConnStr "Data So
             {
                 $reader.Dispose()
             }
+
+            $i++
         }		
 	}
 
