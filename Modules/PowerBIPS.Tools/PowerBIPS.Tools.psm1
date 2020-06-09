@@ -517,7 +517,23 @@ param(
 
               ; dataType = $column.DataType.ToString()
 
-              ; isHidden = $column.isHidden
+              ; isHidden = $column.isHidden                            
+
+            }
+
+            if ($column.DataCategory)
+            {
+                $props.dataCategory = $column.DataCategory.ToString()
+            }
+
+            if ($column.SummarizeBy)
+            {
+                $props.summarizeBy = $column.SummarizeBy.ToString()
+            }
+
+            if ($column.SortByColumn)
+            {
+                $props.sortByColumn = $column.SortByColumn.SourceColumn
             }
 
             $newTable.columns +=  $props

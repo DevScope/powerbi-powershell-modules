@@ -205,10 +205,12 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
 		[switch]
 		$deviceCodeFlow = $false,
 		[string]
-		$tokenCacheFile
+		$tokenCacheFile,
+        [switch]
+		$forceNewAuth = $false
 	)
 
-    if ($Script:AuthContext -eq $null)
+    if ($Script:AuthContext -eq $null -or $forceNewAuth)
     {
         Write-Verbose -Message 'Creating new AuthenticationContext object'
 
@@ -221,12 +223,20 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
 
 		$tokenCache = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.TokenCache
 
-		if (![string]::IsNullOrEmpty($tokenCacheFile) -and (Test-Path $tokenCacheFile))
-		{
-			$bytes = [System.IO.File]::ReadAllBytes($tokenCacheFile)
+        if ($deviceCodeFlow)
+        {
+            if ([string]::IsNullOrEmpty($tokenCacheFile))
+            {
+                $tokenCacheFile = ".\TokenCache.bin"
+            }
 
-			$tokenCache = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.TokenCache(,$bytes)
-		}
+		    if (Test-Path $tokenCacheFile)
+		    {
+			    $bytes = [System.IO.File]::ReadAllBytes($tokenCacheFile)
+
+			    $tokenCache = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.TokenCache(,$bytes)
+		    }
+        }
 		
         $script:AuthContext = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext -ArgumentList ($authorityUrl, $tokenCache)    
     }
@@ -318,7 +328,7 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
             Write-Output $AuthResult.AccessToken
         }   
 
-        if (![string]::IsNullOrEmpty($tokenCacheFile))
+        if ($deviceCodeFlow -and ![string]::IsNullOrEmpty($tokenCacheFile))
 	    {
 		    $bytes = $script:AuthContext.TokenCache.Serialize()
 		
@@ -2211,6 +2221,45 @@ Function Get-PBIDatasources{
 	} 		
 }
 
+Function Get-PBIActivityEvents{
+<#
+.SYNOPSIS    
+	Gets Power BI Activity Events
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.PARAMETER startDateTime
+    Start date and time of the window for audit event results
+.PARAMETER endDateTime
+    End date and time of the window for audit event results
+.PARAMETER filter
+    Filters the results based on a boolean condition, using 'Activity', 'UserId', or both properties. Supports only 'eq' and 'and' operators.
+#>
+	[CmdletBinding()]	
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$true)] [datetime] $startDateTime,
+        [Parameter(Mandatory=$true)] [datetime] $endDateTime,
+		[Parameter(Mandatory=$false)] [string] $filter
+	)
+
+	begin {}
+	process
+	{		 
+        $odataParams = "startDateTime='$($startDateTime.ToString("s"))'&endDateTime='$($endDateTime.ToString("s"))'"
+
+        if (![string]::IsNullOrEmpty($filter))
+        {
+            $odataParams += "&`$filter=$filter"
+        }
+
+        $result = Invoke-PBIRequest -authToken $token -resource "activityevents" -admin -odataParams $odataParams 
+             
+	    Write-Output $result
+
+	} 		
+}
+
 Function Invoke-PBIRequest{
 <#
 .SYNOPSIS    
@@ -2278,10 +2327,28 @@ Function Invoke-PBIRequest{
 		
         $output = $result
 
-		if ($result -ne $null -and $result.PSObject.Properties['value'])
-		{
-			$output = $result.value
-		}
+        if ($result -ne $null)
+        {
+            if ($result.PSObject.Properties['value'])
+		    {
+			    $output = $result.value
+		    }
+
+            if ($resource -eq "activityevents" -and $result)
+		    {
+                $output = @($result.activityEventEntities)
+                
+                while($result.continuationToken -ne $null)
+                {          
+                    $result = Invoke-RestMethod -Uri $result.continuationUri -Headers $headers -Method $method -ContentType $contentType -TimeoutSec $timeoutSec
+                         
+                    if ($result.activityEventEntities)
+                    {
+                        $output += $result.activityEventEntities  
+                    }
+			    }
+		    }
+        }		       
 		
         if ($output)
         {
