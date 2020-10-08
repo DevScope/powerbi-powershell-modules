@@ -41,6 +41,22 @@ $script:pbiGroupId = $null
 
 #endregion
 
+Function Grant-AppTenantPermission
+{
+[CmdletBinding()]
+param
+(
+        [string]
+        $tenantId
+)
+    $appId = $script:pbiDefaultClientId
+    $resource = $script:pbiResourceUrl
+
+    $grantUrl = "https://login.microsoftonline.com/$tenantId/oauth2/authorize?client_id=$appId&resource=$resource&prompt=admin_consent&response_type=code"
+
+    Write-Host "Open URL: $grantUrl"
+}
+
 Function Set-PBIModuleConfig
 {
 <#
@@ -166,7 +182,7 @@ Forces the authentication popup to always ask for the username and password
 The Azure AD Tenant Id, optional and only needed if you are using the App Authentication Flow
 
 .PARAMETER clientSecret
-The Azure AD client secret, optional and only needed it the ClientId is a Azure AD WebApp type
+The Azure AD application secret, also for serviceprincipal authentication flow
 
 .EXAMPLE
 Get-PBIAuthToken -clientId "C0E8435C-614D-49BF-A758-3EF858F8901B"
@@ -195,7 +211,7 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
         $redirectUri,   
         [Parameter(Mandatory=$false)]
         [string]
-        $tenantId,     
+        $tenantId,    
 		[Parameter(Mandatory=$false)]
         [string]
         $clientSecret,
@@ -205,31 +221,38 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
 		[switch]
 		$deviceCodeFlow = $false,
 		[string]
-		$tokenCacheFile
+		$tokenCacheFile,
+        [switch]
+		$servicePrincipal
 	)
 
-    if ($Script:AuthContext -eq $null)
+    Write-Verbose -Message 'Creating new AuthenticationContext object'
+
+    $authorityUrl = $script:pbiAuthorityUrl
+
+    if (![string]::IsNullOrEmpty($tenantId))
     {
-        Write-Verbose -Message 'Creating new AuthenticationContext object'
+        $authorityUrl = $authorityUrl.Replace("/common","/$tenantId")
+    }
 
-        $authorityUrl = $script:pbiAuthorityUrl
+	$tokenCache = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.TokenCache
 
-        if (![string]::IsNullOrEmpty($tenantId))
+    if ($deviceCodeFlow)
+    {
+        if ([string]::IsNullOrEmpty($tokenCacheFile))
         {
-            $authorityUrl = $authorityUrl.Replace("/common","/$tenantId")
+            $tokenCacheFile = ".\TokenCache.bin"
         }
 
-		$tokenCache = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.TokenCache
-
-		if (![string]::IsNullOrEmpty($tokenCacheFile) -and (Test-Path $tokenCacheFile))
+		if (Test-Path $tokenCacheFile)
 		{
 			$bytes = [System.IO.File]::ReadAllBytes($tokenCacheFile)
 
 			$tokenCache = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.TokenCache(,$bytes)
 		}
-		
-        $script:AuthContext = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext -ArgumentList ($authorityUrl, $tokenCache)    
     }
+		
+    $authContext = New-Object -TypeName Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext -ArgumentList ($authorityUrl, $tokenCache)    
 
 	if ([string]::IsNullOrEmpty($clientId))
 	{
@@ -243,40 +266,60 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
 	
 	Write-Verbose -Message 'Getting the Authentication Token'
 	
-    if ($credential -ne $null)
+    if ($credential -ne $null -and !$servicePrincipal)
     {
         Write-Verbose -Message 'Using username+password authentication flow'
 		
 		$UserCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.UserPasswordCredential($credential.UserName, $credential.Password)
 		
-        $AuthResult = [Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContextIntegratedAuthExtensions]::AcquireTokenAsync($script:AuthContext
+        $task = [Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContextIntegratedAuthExtensions]::AcquireTokenAsync($authContext
         , $script:pbiResourceUrl
 		, $clientId
-		, $UserCredential).Result
+		, $UserCredential)
+
+        $AuthResult = $task.Result
     }
-    elseif (![string]::IsNullOrEmpty($clientSecret))
+    elseif (![string]::IsNullOrEmpty($clientSecret) -and ![string]::IsNullOrEmpty($clientId))
     {
         $clientCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.ClientCredential($clientId, $clientSecret);
 
-        $AuthResult = $script:AuthContext.AcquireTokenAsync(
+        $task = $authContext.AcquireTokenAsync(
           $script:pbiResourceUrl
-        , $clientCredential).Result
+        , $clientCredential)
+
+        $AuthResult = $task.Result
+	}
+    elseif ($servicePrincipal -and $credential)
+    {
+        $passwordStr = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($credential.Password))
+
+        $clientCredential = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.ClientCredential($credential.UserName, $passwordStr);
+
+        $task = $authContext.AcquireTokenAsync(
+          $script:pbiResourceUrl
+        , $clientCredential)
+
+        $AuthResult = $task.Result
 	}
 	elseif($deviceCodeFlow)
 	{
 		# if there's a token in cache reuse
 
-		if ($script:AuthContext.TokenCache.Count -gt 0)
+		if ($authContext.TokenCache.Count -gt 0)
 		{
-			$AuthResult = $script:AuthContext.AcquireTokenSilentAsync($script:pbiResourceUrl, $clientId).Result
+            $task = $authContext.AcquireTokenSilentAsync($script:pbiResourceUrl, $clientId)
+
+			$AuthResult = $task.Result
 		}
 		else
 		{
-			$deviceCode = $script:AuthContext.AcquireDeviceCodeAsync($script:pbiResourceUrl, $clientId).Result
+            $task = $authContext.AcquireDeviceCodeAsync($script:pbiResourceUrl, $clientId)
+
+			$deviceCode = $task.Result
 
 			Write-Host "Go to '$($deviceCode.VerificationUrl)' and enter device code: '$($deviceCode.UserCode)'"
 			
-			$task = $script:AuthContext.AcquireTokenByDeviceCodeAsync($deviceCode)
+			$task = $authContext.AcquireTokenByDeviceCodeAsync($deviceCode)
 			
 			$task.Wait()
 
@@ -298,12 +341,21 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
 		
 		$pltParams = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.PlatformParameters($promptBehavior)
 		
-		$AuthResult = $script:authContext.AcquireTokenAsync($script:pbiResourceUrl, $clientId, [Uri]$redirectUri, $pltParams).Result        
+        $task = $authContext.AcquireTokenAsync($script:pbiResourceUrl, $clientId, [Uri]$redirectUri, $pltParams)
+
+		$AuthResult = $task.Result        
     }
 
     if ($AuthResult -eq $null)
     {
-        throw "Cannot get the access token, AcquireTokenAsync returned null"
+        if ($task -and $task.Exception)
+        {
+            $exception = $task.Exception
+            $exceptionStr = $exception.ToString()
+        }
+
+        throw ( New-Object System.Exception( "Cannot get the access token, AcquireTokenAsync returned null. Error: '$exceptionStr'", $exception ) )
+
     }
     else
     {
@@ -318,11 +370,11 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
             Write-Output $AuthResult.AccessToken
         }   
 
-        if (![string]::IsNullOrEmpty($tokenCacheFile))
+        if ($deviceCodeFlow -and ![string]::IsNullOrEmpty($tokenCacheFile))
 	    {
-		    $bytes = $script:AuthContext.TokenCache.Serialize()
+		    $bytes = $authContext.TokenCache.Serialize()
 		
-		    $script:AuthContext.TokenCache.HasStateChanged = $false
+		    $authContext.TokenCache.HasStateChanged = $false
 		
 		    [System.IO.File]::WriteAllBytes($tokenCacheFile, $bytes)
 	    }
@@ -612,9 +664,7 @@ Function Get-PBIReport{
 						
 		Write-Verbose "Found $($reports.count) reports."
 
-		$reports = Find-ByIdOrName -items $reports -id $id -name $name
-		
-		Write-Output $reports
+		Find-ByIdOrName -items $reports -id $id -name $name
 }
 
 Function Set-PBIReportContent{
@@ -701,7 +751,7 @@ Function Get-PBIDashboard{
 	
 	Write-Verbose "Found $($dashboards.count) dashboard."			
 
-	Write-Output (Find-ByIdOrName -items $dashboards -id $id -name $name)		
+	Find-ByIdOrName -items $dashboards -id $id -name $name
 }
 
 Function Get-PBIDashboardTile{
@@ -1647,6 +1697,9 @@ Function Import-PBIFile{
 .PARAMETER groupId
 	The workspace ID.
 
+.PARAMETER wait
+	If specified waits for the import to finish
+
 .EXAMPLE
 	$file = Resolve-Path .\Samples\PBIX\MyMovies.pbix
 	$authToken = Get-PBIAuthToken -Verbose
@@ -1671,7 +1724,8 @@ Function Import-PBIFile{
 		[Parameter(Mandatory=$false)]
 		[ValidateSet("Abort","Overwrite","Ignore","CreateOrOverwrite")]
 		[string]$nameConflict = "Ignore",
-		[Parameter(Mandatory=$false)] [string] $groupId
+		[Parameter(Mandatory=$false)] [string] $groupId,
+        [Parameter(Mandatory=$false)] [switch] $wait
 	)
 	
 	begin
@@ -1711,7 +1765,9 @@ Function Import-PBIFile{
 		
 		$bodyLines = (
 			"--$boundary",
-			"Content-Disposition: form-data; name=`"file0`"; filename=`"$fileName`"; filename*=UTF-8''$fileName",
+			#"Content-Disposition: form-data; name=`"file0`"; filename=`"$fileName`"; filename*=UTF-8''$fileName",
+            "Content-Disposition: form-data; name=`"file0`"; filename=`"$fileName`"",
+            #"Content-Disposition: form-data",
 			"Content-Type: application/x-zip-compressed$LF",
 			$fileEnc,
 			"--$boundary--$LF"
@@ -1720,7 +1776,27 @@ Function Import-PBIFile{
 		$result = Invoke-PBIRequest -authToken $authToken -method Post -resource "imports?datasetDisplayName=$reportDataSetName&nameConflict=$nameConflict" `
 			-ContentType "multipart/form-data; boundary=--$boundary" -Body $bodyLines -groupId $groupId
 		
-		Write-Output $result
+        if (!$wait)
+        {
+		    Write-Output $result
+        }
+        elseif ($result)
+        {
+            Start-Sleep -Seconds 2 
+
+            $importStatus = Get-PBIImports -authToken $authToken -importId $result.id -groupId $result.groupId
+
+            while($importStatus.importState -eq "Publishing")
+            {
+                $importStatus = Get-PBIImports -authToken $authToken -importId $result.id -groupId $result.groupId
+            
+                Write-Verbose "Waiting for import '$($importStatus.id)', Status: $($importStatus.importState)"
+
+                Start-Sleep -Seconds 2    
+            }    
+            
+            Write-Output $importStatus  
+        }
 	}    	
 }
 
@@ -2211,6 +2287,45 @@ Function Get-PBIDatasources{
 	} 		
 }
 
+Function Get-PBIActivityEvents{
+<#
+.SYNOPSIS    
+	Gets Power BI Activity Events
+.PARAMETER AuthToken
+    The authorization token required to comunicate with the PowerBI APIs
+	Use 'Get-PBIAuthToken' to get the authorization token string
+.PARAMETER startDateTime
+    Start date and time of the window for audit event results
+.PARAMETER endDateTime
+    End date and time of the window for audit event results
+.PARAMETER filter
+    Filters the results based on a boolean condition, using 'Activity', 'UserId', or both properties. Supports only 'eq' and 'and' operators.
+#>
+	[CmdletBinding()]	
+	param(									
+		[Parameter(Mandatory=$false)] [string] $authToken,
+		[Parameter(Mandatory=$true)] [datetime] $startDateTime,
+        [Parameter(Mandatory=$true)] [datetime] $endDateTime,
+		[Parameter(Mandatory=$false)] [string] $filter
+	)
+
+	begin {}
+	process
+	{		 
+        $odataParams = "startDateTime='$($startDateTime.ToString("s"))'&endDateTime='$($endDateTime.ToString("s"))'"
+
+        if (![string]::IsNullOrEmpty($filter))
+        {
+            $odataParams += "&`$filter=$filter"
+        }
+
+        $result = Invoke-PBIRequest -authToken $token -resource "activityevents" -admin -odataParams $odataParams 
+             
+	    Write-Output $result
+
+	} 		
+}
+
 Function Invoke-PBIRequest{
 <#
 .SYNOPSIS    
@@ -2278,10 +2393,28 @@ Function Invoke-PBIRequest{
 		
         $output = $result
 
-		if ($result -ne $null -and $result.PSObject.Properties['value'])
-		{
-			$output = $result.value
-		}
+        if ($result -ne $null)
+        {
+            if ($result.PSObject.Properties['value'])
+		    {
+			    $output = $result.value
+		    }
+
+            if ($resource -eq "activityevents" -and $result)
+		    {
+                $output = @($result.activityEventEntities)
+                
+                while($result.continuationToken -ne $null)
+                {          
+                    $result = Invoke-RestMethod -Uri $result.continuationUri -Headers $headers -Method $method -ContentType $contentType -TimeoutSec $timeoutSec
+                         
+                    if ($result.activityEventEntities)
+                    {
+                        $output += $result.activityEventEntities  
+                    }
+			    }
+		    }
+        }		       
 		
         if ($output)
         {
