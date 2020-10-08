@@ -43,6 +43,15 @@ $script:pbiGroupId = $null
 
 Function Grant-AppTenantPermission
 {
+<#
+.SYNOPSIS
+Generate a URL to grant the permission of the Azure App configured in the module         
+.DESCRIPTION
+Generate a URL to grant the permission of the Azure App configured in the module 
+.PARAMETER tenantId
+Azure Tenant Id
+.EXAMPLE
+Grant-AppTenantPermission -tenantId "<guid>"
 [CmdletBinding()]
 param
 (
