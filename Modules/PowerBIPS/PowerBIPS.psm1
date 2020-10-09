@@ -52,6 +52,7 @@ Generate a URL to grant the permission of the Azure App configured in the module
 Azure Tenant Id
 .EXAMPLE
 Grant-AppTenantPermission -tenantId "<guid>"
+#>
 [CmdletBinding()]
 param
 (
