@@ -2182,8 +2182,29 @@ function Set-PBIDatasetParameters{
 		{			
 			$dataset = Get-PBIDataSet -authToken $authToken -id $dataset -groupId $groupId
 		}
+        
+        if ($parameters -is [Array])
+        {
+		    $bodyObj = @{updateDetails=$parameters}
+        }
+        elseif ($parameters -is [hashtable])
+        {
+            $updateDetails = @()
 
-		$bodyObj = @{updateDetails=$parameters}
+            @($parameters.Keys) |% { 
+                $updateDetails += @{
+                    "name" = $_
+                    ;
+                    "newValue" = $parameters[$_]
+                }
+            }
+
+            $bodyObj = @{updateDetails=$updateDetails}
+        }
+        else
+        {
+            throw "Invalid -parameters type, must be an array or hashtable"
+        }
 
         Invoke-PBIRequest -authToken $authToken -method Post -resource "datasets/$($dataset.id)/UpdateParameters" -Body ($bodyObj | ConvertTo-Json)	-groupId $dataset.groupId	
 
