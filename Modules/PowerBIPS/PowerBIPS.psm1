@@ -251,7 +251,7 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
     {
         if ([string]::IsNullOrEmpty($tokenCacheFile))
         {
-            $tokenCacheFile = ".\TokenCache.bin"
+            throw "Using -DeviceCodeFlow you must set the parameter -tokenCacheFile to persist the auth token"
         }
 
 		if (Test-Path $tokenCacheFile)
