@@ -2350,7 +2350,7 @@ Function Get-PBIActivityEvents{
             $odataParams += "&`$filter=$filter"
         }
 
-        $result = Invoke-PBIRequest -authToken $token -resource "activityevents" -admin -odataParams $odataParams 
+        $result = Invoke-PBIRequest -authToken $authToken -resource "activityevents" -admin -odataParams $odataParams 
              
 	    Write-Output $result
 
