@@ -247,13 +247,8 @@ Get-PBIAuthToken -ClientId "C0E8435C-614D-49BF-A758-3EF858F8901B" -tenantId "com
 
 	$tokenCache = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.TokenCache
 
-    if ($deviceCodeFlow)
+    if ($deviceCodeFlow -and ![string]::IsNullOrEmpty($tokenCacheFile))
     {
-        if ([string]::IsNullOrEmpty($tokenCacheFile))
-        {
-            throw "Using -DeviceCodeFlow you must set the parameter -tokenCacheFile to persist the auth token"
-        }
-
 		if (Test-Path $tokenCacheFile)
 		{
 			$bytes = [System.IO.File]::ReadAllBytes($tokenCacheFile)
@@ -2376,7 +2371,8 @@ Function Invoke-PBIRequest{
 		[Parameter(Mandatory=$false)] [string] $groupId,
 		[Parameter(Mandatory=$false)] [switch] $ignoreGroup = $false,
 		[Parameter(Mandatory=$false)] [switch] $admin = $false,
-		[Parameter(Mandatory=$false)] [string] $odataParams = $null
+		[Parameter(Mandatory=$false)] [string] $odataParams = $null,
+        [Parameter(Mandatory=$false)] [int] $batchCount = -1
 			
 	)
 	  	
@@ -2416,36 +2412,68 @@ Function Invoke-PBIRequest{
 	{
 		$url += "?$odataParams"	
 	}
+
+    $url = [SYstem.Uri]$url
     	
     try
     {
-        $result = Invoke-RestMethod -Uri $url -Headers $headers -Method $method -Body $body -ContentType $contentType `
-            -TimeoutSec $timeoutSec -OutFile $outFile        
-		
-        $output = $result
+        # If batchcount is specified use the Skip & batch parameter to iterate all the results
 
-        if ($result -ne $null)
+        $skip = 0      
+        $result = @()
+
+        do
         {
-            if ($result.PSObject.Properties['value'])
-		    {
-			    $output = $result.value
-		    }
+            $requestUrl = $url.ToString()
 
-            if ($resource -eq "activityevents" -and $result)
-		    {
-                $output = @($result.activityEventEntities)
-                
-                while($result.continuationToken -ne $null)
-                {          
-                    $result = Invoke-RestMethod -Uri $result.continuationUri -Headers $headers -Method $method -ContentType $contentType -TimeoutSec $timeoutSec
+            if ($batchCount -gt 0)
+            {               
+                if ($url.Query)
+                {
+                    $requestUrl += "&"
+                }
+                else
+                {
+                    $requestUrl += "?"
+                }
                          
-                    if ($result.activityEventEntities)
-                    {
-                        $output += $result.activityEventEntities  
-                    }
-			    }
-		    }
-        }		       
+                $requestUrl += "`$top=$batchCount&`$skip=$skip" 	
+            }            
+
+            $batch = Invoke-RestMethod -Uri $requestUrl -Headers $headers -Method $method -Body $body -ContentType $contentType -TimeoutSec $timeoutSec -OutFile $outFile        
+		
+            if ($batch -ne $null -and $batch.PSObject.Properties['value'])
+            {
+                $batch = $batch.value
+            }	  
+
+            if ($batch)
+            {
+                $result += $batch
+
+                $skip = $skip + $batchCount
+            }            
+        }
+        while($batchCount -gt 0 -and $batch.Count -ne 0 -and $batch.Count -ge $batchCount)              
+
+        if ($resource -eq "activityevents" -and $result)
+		{
+            $output = @($result.activityEventEntities)
+                
+            while($result.continuationToken -ne $null)
+            {          
+                $result = Invoke-RestMethod -Uri $result.continuationUri -Headers $headers -Method $method -ContentType $contentType -TimeoutSec $timeoutSec
+                         
+                if ($result.activityEventEntities)
+                {
+                    $output += $result.activityEventEntities  
+                }
+			}
+		}
+        else
+        {
+            $output = $result
+        }             
 		
         if ($output)
         {
